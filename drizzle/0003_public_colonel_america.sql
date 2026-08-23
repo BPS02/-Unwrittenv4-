@@ -1,0 +1,1 @@
+ALTER TABLE "entitlements" ADD COLUMN "purchased_credits" integer DEFAULT 0 NOT NULL;

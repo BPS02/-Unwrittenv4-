@@ -1,0 +1,124 @@
+import { z } from "zod";
+import {
+  GENRES,
+  MOODS,
+  PERSPECTIVES,
+  LYRICAL_STYLES,
+  MAX_QUESTIONS,
+  STRUCTURES,
+} from "./types";
+
+export const MAX_THOUGHT_LENGTH = 2000;
+export const MAX_CONTEXT_LENGTH = 1000;
+export const MAX_FEELINGS_TEXT_LENGTH = 600;
+export const MIN_THOUGHT_WORDS = 3;
+export const MAX_QUESTION_LENGTH = 300;
+export const MAX_ANSWER_LENGTH = 500;
+
+export function thoughtWordCount(value: string): number {
+  return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
+const trimmed = (max: number) =>
+  z
+    .string()
+    .max(max, `Please keep this under ${max} characters.`)
+    .transform((s) => s.trim());
+
+/**
+ * One answered follow-up question. The question text travels with the answer
+ * so the lyrics prompt keeps the pairing — the server never has to trust a
+ * client-held question list to reconstruct it.
+ */
+export const questionAnswerSchema = z.object({
+  id: z.string().min(1).max(16),
+  question: trimmed(MAX_QUESTION_LENGTH),
+  answer: trimmed(MAX_ANSWER_LENGTH),
+});
+
+export const songInputSchema = z.object({
+  thought: z
+    .string()
+    .transform((s) => s.trim())
+    .pipe(
+      z
+        .string()
+        .max(MAX_THOUGHT_LENGTH, `Please keep this under ${MAX_THOUGHT_LENGTH} characters.`)
+        .refine(
+          (value) => thoughtWordCount(value) >= MIN_THOUGHT_WORDS,
+          "Share at least a few words to begin."
+        )
+    ),
+  feelings: z.array(z.string().min(1).max(40)).max(12).default([]),
+  feelingsText: trimmed(MAX_FEELINGS_TEXT_LENGTH).default(""),
+  context: trimmed(MAX_CONTEXT_LENGTH).default(""),
+  templateId: z.string().max(60).optional(),
+  /**
+   * Answers to the follow-up questions. Optional here so the MCP server's
+   * write_lyrics keeps working without them; the web flow requires every
+   * question to be answered before it calls /api/lyrics (the server cannot
+   * enforce that itself — it never sees the question set).
+   */
+  answers: z.array(questionAnswerSchema).max(MAX_QUESTIONS).default([]),
+});
+
+export const songControlsSchema = z.object({
+  genre: z.enum(GENRES),
+  mood: z.enum(MOODS),
+  perspective: z.enum(PERSPECTIVES),
+  lyricalStyle: z.enum(LYRICAL_STYLES),
+  structure: z.enum(STRUCTURES),
+  keepClean: z.boolean().default(true),
+});
+
+export const lyricsRequestSchema = z.object({
+  input: songInputSchema,
+  controls: songControlsSchema,
+  /** Bumped by "another take" so demo-mode regeneration yields a new song. */
+  variation: z.number().int().min(0).max(9999).default(0),
+});
+
+export const musicRequestSchema = z.object({
+  title: z.string().transform((s) => s.trim()).pipe(z.string().min(1).max(200)),
+  lyrics: z
+    .string()
+    .transform((s) => s.trim())
+    .pipe(z.string().min(10, "Lyrics are needed to shape the music.").max(8000)),
+  controls: songControlsSchema,
+  /**
+   * The STYLE production brief the generator wrote alongside the lyrics.
+   * Optional: absent (old draft, or a caller that skipped write_lyrics) the
+   * server falls back to the deterministic brief. This is a creative brief,
+   * not an entitlement — nothing here grants anything.
+   */
+  style: trimmed(1500).optional(),
+  /**
+   * Client-generated id for "one thought rendered to music". Takes are
+   * counted per songId server-side. Note: entitlement (plan, credits, takes)
+   * is NEVER accepted from the body — unknown keys are stripped by Zod and
+   * entitlement is resolved from the authenticated userId only.
+   */
+  songId: z.string().min(6).max(64).optional(),
+});
+
+/**
+ * Request for the follow-up questions asked between "Shape" and "Lyrics".
+ * Same input + controls as a lyrics request; no variation, since a question
+ * set is not something the user re-rolls.
+ */
+export const questionsRequestSchema = z.object({
+  input: songInputSchema,
+  controls: songControlsSchema,
+});
+
+export type LyricsRequestParsed = z.infer<typeof lyricsRequestSchema>;
+export type MusicRequestParsed = z.infer<typeof musicRequestSchema>;
+export type QuestionsRequestParsed = z.infer<typeof questionsRequestSchema>;
+
+/** Formats a ZodError into a single friendly sentence for API responses. */
+export function firstIssueMessage(error: z.ZodError): string {
+  const issue = error.issues[0];
+  if (!issue) return "Something about the request wasn't valid.";
+  const path = issue.path.length > 0 ? `${issue.path.join(".")}: ` : "";
+  return `${path}${issue.message}`;
+}

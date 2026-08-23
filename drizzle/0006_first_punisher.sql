@@ -1,0 +1,1 @@
+DROP TABLE "render_jobs" CASCADE;

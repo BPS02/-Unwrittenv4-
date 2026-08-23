@@ -1,0 +1,593 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { artFor } from "@/lib/cover-art";
+import TrackList from "./TrackList";
+
+export interface SavedSongWire {
+  id: string;
+  title: string;
+  lyrics: string;
+  stylePrompt: string;
+  provider: string;
+  createdAt: string;
+  unlocked: boolean;
+  downloadable: boolean;
+  favorite: boolean;
+  sizeBytes: number | null;
+  mimeType: string;
+  streamPath: string | null;
+}
+
+interface PlaylistWire {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  trackCount: number;
+  coverSongIds: string[];
+}
+
+type Sort = "recent" | "created" | "alpha";
+
+const SORT_LABELS: Record<Sort, string> = {
+  recent: "Recently saved",
+  created: "Recently created",
+  alpha: "A–Z",
+};
+
+/**
+ * The two built-in views. They are derived, never stored: "Liked" is just
+ * `favorite === true` and "All songs" is the vault itself, so they cannot
+ * drift out of sync and cannot be renamed or deleted.
+ */
+type AutoKey = "liked" | "all";
+
+type View = { kind: "grid" } | { kind: "auto"; key: AutoKey } | { kind: "playlist"; id: string };
+
+function errorMessageFrom(data: unknown, fallback: string): string {
+  return data && typeof data === "object" && "error" in data && typeof data.error === "string"
+    ? data.error
+    : fallback;
+}
+
+/** A 2×2 collage of member artwork, like a playlist thumbnail anywhere else. */
+function CollageArt({ songIds, glyph }: { songIds: string[]; glyph?: string }) {
+  if (songIds.length === 0) {
+    return (
+      <div className="pl-art pl-art-empty" aria-hidden="true">
+        <span>{glyph ?? "♪"}</span>
+      </div>
+    );
+  }
+  // One song fills the tile; two or more tile into quadrants.
+  const cells = songIds.length === 1 ? songIds : songIds.slice(0, 4);
+  return (
+    <div className={`pl-art${cells.length > 1 ? " is-collage" : ""}`} aria-hidden="true">
+      {cells.map((id, i) => (
+        <span key={`${id}-${i}`} style={{ background: artFor(id) }} />
+      ))}
+    </div>
+  );
+}
+
+export default function PlaylistsView() {
+  const [songs, setSongs] = useState<SavedSongWire[] | null>(null);
+  const [playlists, setPlaylists] = useState<PlaylistWire[]>([]);
+  const [detailSongIds, setDetailSongIds] = useState<Record<string, string[]>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<View>({ kind: "grid" });
+  const [sort, setSort] = useState<Sort>("recent");
+  const [sortOpen, setSortOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [renaming, setRenaming] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3200);
+  }, []);
+
+  const loadAll = useCallback(async () => {
+    try {
+      const [songsRes, playlistsRes] = await Promise.all([
+        fetch("/api/songs"),
+        fetch("/api/playlists"),
+      ]);
+      const songsData: unknown = await songsRes.json().catch(() => null);
+      if (!songsRes.ok) {
+        setError(errorMessageFrom(songsData, "Couldn't load your songs."));
+        return;
+      }
+      setSongs((songsData as { songs: SavedSongWire[] }).songs);
+      if (playlistsRes.ok) {
+        const p: unknown = await playlistsRes.json().catch(() => null);
+        setPlaylists((p as { playlists: PlaylistWire[] })?.playlists ?? []);
+      }
+    } catch {
+      setError("Couldn't load your songs.");
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAll();
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    };
+  }, [loadAll]);
+
+  const songById = useMemo(() => {
+    const map = new Map<string, SavedSongWire>();
+    for (const s of songs ?? []) map.set(s.id, s);
+    return map;
+  }, [songs]);
+
+  const liked = useMemo(() => (songs ?? []).filter((s) => s.favorite), [songs]);
+
+  const sortedPlaylists = useMemo(() => {
+    const list = [...playlists];
+    if (sort === "alpha") return list.sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === "created") {
+      return list.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+    }
+    return list.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+  }, [playlists, sort]);
+
+  /* ── Playlist mutations ───────────────────────────────────────────── */
+
+  const createPlaylist = async () => {
+    const name = newName.trim();
+    if (!name) return;
+    try {
+      const res = await fetch("/api/playlists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data: unknown = await res.json().catch(() => null);
+      if (!res.ok) {
+        showToast(errorMessageFrom(data, "Couldn't create the playlist."));
+        return;
+      }
+      const created = (data as { playlist: PlaylistWire }).playlist;
+      setPlaylists((prev) => [created, ...prev]);
+      setCreating(false);
+      setNewName("");
+      showToast(`“${created.name}” created`);
+    } catch {
+      showToast("Couldn't create the playlist.");
+    }
+  };
+
+  const patchPlaylist = async (id: string, patch: Record<string, string>, successMessage?: string) => {
+    try {
+      const res = await fetch(`/api/playlists/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const data: unknown = await res.json().catch(() => null);
+      if (!res.ok) {
+        showToast(errorMessageFrom(data, "Couldn't update the playlist."));
+        return;
+      }
+      const updated = (data as { playlist: PlaylistWire & { songIds: string[] } }).playlist;
+      setPlaylists((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      setDetailSongIds((prev) => ({ ...prev, [updated.id]: updated.songIds }));
+      if (successMessage) showToast(successMessage);
+    } catch {
+      showToast("Couldn't update the playlist.");
+    }
+  };
+
+  const removePlaylist = async (id: string, name: string) => {
+    try {
+      const res = await fetch(`/api/playlists/${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setPlaylists((prev) => prev.filter((p) => p.id !== id));
+      setView({ kind: "grid" });
+      showToast(`“${name}” deleted — the songs are still in your vault`);
+    } catch {
+      showToast("Couldn't delete the playlist.");
+    }
+  };
+
+  const openPlaylist = async (id: string) => {
+    setView({ kind: "playlist", id });
+    try {
+      const res = await fetch(`/api/playlists/${encodeURIComponent(id)}`);
+      if (!res.ok) return;
+      const data: unknown = await res.json();
+      const detail = (data as { playlist: PlaylistWire & { songIds: string[] } }).playlist;
+      setDetailSongIds((prev) => ({ ...prev, [id]: detail.songIds }));
+    } catch {
+      // The grid already told us the track count; a failed detail load just
+      // shows an empty list rather than breaking the page.
+    }
+  };
+
+  /* ── Song mutations (shared by every view) ────────────────────────── */
+
+  const toggleFavorite = async (song: SavedSongWire) => {
+    const next = !song.favorite;
+    setSongs((prev) => prev?.map((s) => (s.id === song.id ? { ...s, favorite: next } : s)) ?? prev);
+    try {
+      const res = await fetch(`/api/songs/${encodeURIComponent(song.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ favorite: next }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setSongs((prev) => prev?.map((s) => (s.id === song.id ? { ...s, favorite: !next } : s)) ?? prev);
+      showToast("Couldn't update that — try again");
+    }
+  };
+
+  const deleteSong = async (song: SavedSongWire) => {
+    try {
+      const res = await fetch(`/api/songs/${encodeURIComponent(song.id)}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setSongs((prev) => prev?.filter((s) => s.id !== song.id) ?? prev);
+      // Membership cascades server-side; mirror it locally so counts agree.
+      setDetailSongIds((prev) => {
+        const next: Record<string, string[]> = {};
+        for (const [id, ids] of Object.entries(prev)) next[id] = ids.filter((s) => s !== song.id);
+        return next;
+      });
+      setPlaylists((prev) =>
+        prev.map((p) =>
+          p.coverSongIds.includes(song.id)
+            ? { ...p, coverSongIds: p.coverSongIds.filter((s) => s !== song.id) }
+            : p
+        )
+      );
+      showToast(`“${song.title}” deleted`);
+    } catch {
+      showToast("Couldn't delete the song — try again");
+    }
+  };
+
+  const startUnlock = async (song: SavedSongWire) => {
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product: "song_pass", songId: song.id }),
+      });
+      const data: unknown = await res.json().catch(() => null);
+      const url =
+        data && typeof data === "object" && "url" in data && typeof data.url === "string"
+          ? data.url
+          : null;
+      if (!res.ok || !url) {
+        showToast("Checkout couldn't start — is billing configured?");
+        return;
+      }
+      window.location.assign(url);
+    } catch {
+      showToast("Checkout couldn't start — try again");
+    }
+  };
+
+  const shareSong = async (song: SavedSongWire) => {
+    if (!song.streamPath) return;
+    const shareUrl = new URL("/share", window.location.origin);
+    shareUrl.searchParams.set("audio", song.streamPath);
+    shareUrl.searchParams.set("title", song.title);
+    shareUrl.searchParams.set("song", song.id);
+    const url = shareUrl.toString();
+    const text = `I made “${song.title}” with Unwritten to share how I’m feeling.`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `“${song.title}” — made with Unwritten`, text, url });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        // A browser can advertise sharing and still fail; copying remains useful.
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("Song link copied — ready to text");
+    } catch {
+      showToast("Couldn't copy — your browser blocked it");
+    }
+  };
+
+  /* ── Render ───────────────────────────────────────────────────────── */
+
+  if (error) {
+    return (
+      <section className="songs-empty">
+        <span aria-hidden="true">♫</span>
+        <h1>Something went wrong</h1>
+        <p>{error}</p>
+        <Link href="/create" className="btn btn-primary">Create a song</Link>
+      </section>
+    );
+  }
+
+  if (songs === null) {
+    return (
+      <section className="songs-empty" role="status" aria-live="polite">
+        <span aria-hidden="true">♫</span>
+        <h1>Opening your vault…</h1>
+      </section>
+    );
+  }
+
+  const trackActions = {
+    playlists: playlists.map((p) => ({ id: p.id, name: p.name })),
+    onToggleFavorite: toggleFavorite,
+    onDelete: (song: SavedSongWire) => void deleteSong(song),
+    onAddTo: (playlistId: string, songId: string) =>
+      void patchPlaylist(playlistId, { add: songId }, "Added to playlist"),
+    onRemoveFrom: (playlistId: string, songId: string) =>
+      void patchPlaylist(playlistId, { remove: songId }, "Removed from playlist"),
+    onUnlock: (song: SavedSongWire) => void startUnlock(song),
+    onShare: (song: SavedSongWire) => void shareSong(song),
+  };
+
+  // ── Detail: one playlist, or one of the two derived views ──
+  if (view.kind !== "grid") {
+    const isAuto = view.kind === "auto";
+    const playlist = view.kind === "playlist" ? playlists.find((p) => p.id === view.id) : undefined;
+    const title = isAuto
+      ? view.key === "liked"
+        ? "Liked songs"
+        : "All songs"
+      : (playlist?.name ?? "Playlist");
+    const tracks = isAuto
+      ? view.key === "liked"
+        ? liked
+        : songs
+      : (detailSongIds[view.id] ?? [])
+          .map((id) => songById.get(id))
+          .filter((s): s is SavedSongWire => Boolean(s));
+    const coverIds = tracks.slice(0, 4).map((s) => s.id);
+
+    return (
+      <section className="pl-page">
+        <div className="pl-topbar">
+          <button
+            type="button"
+            className="pl-close"
+            aria-label="Back to playlists"
+            onClick={() => setView({ kind: "grid" })}
+          >
+            ✕
+          </button>
+          <span className="pl-crumb">Playlists</span>
+        </div>
+
+        <header className="pl-detail-head">
+          <CollageArt songIds={coverIds} glyph={isAuto && view.key === "liked" ? "★" : "♪"} />
+          <div className="pl-detail-meta">
+            {renaming && playlist ? (
+              <form
+                className="pl-rename"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const value = newName.trim();
+                  setRenaming(false);
+                  if (value && value !== playlist.name) {
+                    void patchPlaylist(playlist.id, { name: value }, "Playlist renamed");
+                  }
+                  setNewName("");
+                }}
+              >
+                <input
+                  type="text"
+                  autoFocus
+                  value={newName}
+                  maxLength={80}
+                  aria-label="Playlist name"
+                  onChange={(e) => setNewName(e.target.value)}
+                />
+                <button type="submit" className="btn btn-primary btn-sm">Save</button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    setRenaming(false);
+                    setNewName("");
+                  }}
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <h1>{title}</h1>
+            )}
+            <p className="pl-detail-sub">
+              {isAuto && <span className="pl-auto-tag">Auto playlist</span>}
+              {tracks.length} {tracks.length === 1 ? "track" : "tracks"}
+            </p>
+            {playlist && !renaming && (
+              <div className="action-row">
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    setNewName(playlist.name);
+                    setRenaming(true);
+                  }}
+                >
+                  Rename
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => void removePlaylist(playlist.id, playlist.name)}
+                >
+                  Delete playlist
+                </button>
+              </div>
+            )}
+          </div>
+        </header>
+
+        <TrackList
+          songs={tracks}
+          playlistId={view.kind === "playlist" ? view.id : null}
+          {...trackActions}
+          emptyMessage={
+            isAuto
+              ? view.key === "liked"
+                ? "Nothing liked yet — tap the star on a song."
+                : "Your vault is empty. Every song you generate is saved here."
+              : "Nothing here yet. Open a song's ⋯ menu to add it to this playlist."
+          }
+        />
+
+        {toast && (
+          <div className="toast" role="status" aria-live="polite">
+            {toast}
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  // ── Grid ──
+  return (
+    <section className="pl-page">
+      <div className="pl-topbar">
+        <Link href="/create" className="pl-close" aria-label="Back to creating">
+          ✕
+        </Link>
+        <span className="pl-crumb is-current">Playlists</span>
+        <div className="pl-sort">
+          <button
+            type="button"
+            className="pl-sort-btn"
+            aria-haspopup="listbox"
+            aria-expanded={sortOpen}
+            onClick={() => setSortOpen((v) => !v)}
+          >
+            {SORT_LABELS[sort]} <span aria-hidden="true">⌄</span>
+          </button>
+          {sortOpen && (
+            <div className="pl-sort-menu" role="listbox">
+              {(Object.keys(SORT_LABELS) as Sort[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="option"
+                  aria-selected={sort === key}
+                  onClick={() => {
+                    setSort(key);
+                    setSortOpen(false);
+                  }}
+                >
+                  {SORT_LABELS[key]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="pl-grid">
+        {creating ? (
+          <form
+            className="pl-tile pl-tile-new is-editing"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void createPlaylist();
+            }}
+          >
+            <div className="pl-art pl-art-new">
+              <input
+                type="text"
+                autoFocus
+                value={newName}
+                maxLength={80}
+                placeholder="Playlist name"
+                aria-label="New playlist name"
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setCreating(false);
+                    setNewName("");
+                  }
+                }}
+              />
+            </div>
+            <div className="action-row">
+              <button type="submit" className="btn btn-primary btn-sm">Create</button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  setCreating(false);
+                  setNewName("");
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button type="button" className="pl-tile pl-tile-new" onClick={() => setCreating(true)}>
+            <span className="pl-art pl-art-new" aria-hidden="true">+</span>
+            <strong>New playlist</strong>
+            <span className="pl-tile-sub">Group songs however you like</span>
+          </button>
+        )}
+
+        <button
+          type="button"
+          className="pl-tile"
+          onClick={() => setView({ kind: "auto", key: "liked" })}
+        >
+          <CollageArt songIds={liked.slice(0, 4).map((s) => s.id)} glyph="★" />
+          <strong>Liked songs</strong>
+          <span className="pl-tile-sub">
+            <span className="pl-auto-tag">Auto playlist</span>
+            {liked.length} {liked.length === 1 ? "track" : "tracks"}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className="pl-tile"
+          onClick={() => setView({ kind: "auto", key: "all" })}
+        >
+          <CollageArt songIds={songs.slice(0, 4).map((s) => s.id)} />
+          <strong>All songs</strong>
+          <span className="pl-tile-sub">
+            <span className="pl-auto-tag">Auto playlist</span>
+            {songs.length} {songs.length === 1 ? "track" : "tracks"}
+          </span>
+        </button>
+
+        {sortedPlaylists.map((playlist) => (
+          <button
+            key={playlist.id}
+            type="button"
+            className="pl-tile"
+            onClick={() => void openPlaylist(playlist.id)}
+          >
+            <CollageArt songIds={playlist.coverSongIds} />
+            <strong>{playlist.name}</strong>
+            <span className="pl-tile-sub">
+              {playlist.trackCount} {playlist.trackCount === 1 ? "track" : "tracks"}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {toast && (
+        <div className="toast" role="status" aria-live="polite">
+          {toast}
+        </div>
+      )}
+    </section>
+  );
+}

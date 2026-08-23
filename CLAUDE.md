@@ -266,10 +266,13 @@ V4 runs the whole creation flow on **two chat prompts** managed in Langfuse
    `LYRICS:`. There is no separate music-brief prompt to keep in sync. Seeded
    from `GENERATOR_SYSTEM_PROMPT`.
 
-The starting-point tiles and template opening thoughts keep their own optional
-prompts (`LANGFUSE_STARTING_POINTS_PROMPT_NAME`,
-`LANGFUSE_TEMPLATE_PROMPT_NAME`) — they are site furniture, not part of the
-two-prompt core.
+These two are the ONLY prompts. The browse-templates path is deliberately
+model-free: the starter templates in `lib/templates.ts` are hand-curated
+under research-grounded emotion families (Plutchik's primaries and their
+studied blends; Cowen & Keltner's emotion categories), and choosing one
+selects its feelings and drops one of its hand-written opening thoughts into
+the box instantly — no API call, nothing to wait for, nothing to fail.
+Picking the same template again rotates to its next thought variant.
 
 `npx tsx seed-langfuse-prompts.ts` pushes both in-repo fallbacks to Langfuse
 as chat prompts labelled `production` (re-running versions them, never
@@ -354,9 +357,10 @@ lyrics.
   opening-line call silently produced an empty box, which read as "the AI
   stopped working" when the server was plainly answering 429.
 - Expensive calls that fire on mount share the same hourly budget as the
-  paid actions. The starting-point tiles are generated once per session and
-  cached in `sessionStorage`; regenerating on every page view exhausted the
-  budget before the visitor wrote anything.
+  paid actions. V3's AI-generated starting-point tiles regenerated on every
+  page view and exhausted the budget before the visitor wrote anything;
+  caching per session helped, and V4 removed the model from that path
+  entirely — templates are hand-curated and free to browse.
 - Long jobs need `export const maxDuration` (music: 300s) or the default
   timeout kills the render.
 

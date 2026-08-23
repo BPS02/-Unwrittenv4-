@@ -1,4 +1,4 @@
-import { MAX_QUESTIONS, MIN_QUESTIONS, type SongQuestion } from "./types";
+﻿import { MAX_QUESTIONS, MIN_QUESTIONS, type SongQuestion } from "./types";
 import type { LyricsRequestParsed, QuestionsRequestParsed } from "./validation";
 
 /**
@@ -16,8 +16,8 @@ import type { LyricsRequestParsed, QuestionsRequestParsed } from "./validation";
  *    in a single completion: title, the production STYLE brief handed to the
  *    music provider, and the lyrics. There is no separate music prompt.
  *
- * The starting-point tiles and template thoughts below are site furniture,
- * not part of the two-prompt core.
+ * These two are the ONLY prompts — the starter templates are hand-curated in
+ * lib/templates.ts, with no model involved.
  */
 
 export const GENERATOR_SYSTEM_PROMPT = `You are the songwriter and producer for a songwriting service. From a song brief built out of a person's own words, you write the complete song in one pass: the title, the production style for the music generator, and the lyrics.
@@ -137,153 +137,6 @@ export function parseGeneratorCompletion(text: string): {
     };
   }
   return { title: "Untitled", style, lyrics: stripStyleLines(trimmed) };
-}
-
-/* ── Starting points (the tiles themselves) ───────────────────────────── */
-
-export const STARTING_POINTS_SYSTEM_PROMPT = `You write the starting points on a songwriting site — the tiles someone scans when they know they want to write but not what about.
-
-A starting point is a THEME, not a thought and not a lyric. It names a situation a person recognises in themselves within a second of reading it.
-
-Principles:
-- Two to five words. "Someone I miss". "Starting over". "The last text I didn't send". Nothing longer.
-- Name a SITUATION, not an emotion. "Someone I miss" works; "Sadness" does not. The feeling comes from the situation, and the person supplies it.
-- Ordinary human life: love, distance, family, work, moving, growing up, small joys, endings, waiting. Not epic, not abstract, not poetic.
-- Every one must be plainly different from the others. Ten shades of heartbreak is one starting point, not ten.
-- Roughly half should be warm or hopeful. Somebody arriving happy needs a door too.
-- Write for anyone. No names, no places, no ages, no genders, nothing that assumes a life the reader may not have.
-- This is creative expression, not therapy. Nothing clinical, nothing about self-harm, nothing that reads as a diagnosis.
-
-Each also needs a TAGLINE — a short second line, under nine words, that says what writing it would give them. And three FEELINGS someone picking it might carry, lowercase, plain words.
-
-Output format — one per line, fields separated by | and nothing else. No numbering, no preamble, no blank lines:
-Theme | Tagline | feeling, feeling, feeling`;
-
-export function buildStartingPointsUserPrompt(params: {
-  count: number;
-  /** Themes already on screen, so a refresh returns genuinely new ones. */
-  avoid?: readonly string[];
-  variation: number;
-}): string {
-  const lines = [`Write ${params.count} starting points.`];
-  if (params.avoid && params.avoid.length > 0) {
-    lines.push(
-      ``,
-      `ALREADY USED — do not repeat these or write near-synonyms of them:`,
-      params.avoid.map((t) => `- ${t}`).join("\n")
-    );
-  }
-  // Nudges the spread so a refresh doesn't drift to the same safe middle.
-  const leans = [
-    "Lean toward beginnings and arrivals.",
-    "Lean toward people — family, friends, the ones who stayed.",
-    "Lean toward places and leaving them.",
-    "Lean toward small ordinary joys.",
-    "Lean toward things left unfinished.",
-  ];
-  lines.push(``, leans[params.variation % leans.length] ?? leans[0]!);
-  return lines.join("\n");
-}
-
-export interface ParsedStartingPoint {
-  theme: string;
-  tagline: string;
-  feelings: string[];
-}
-
-/**
- * Parses the `Theme | Tagline | feelings` contract, tolerating numbering and
- * stray bullets. Rows missing a field are dropped rather than half-rendered.
- */
-export function parseStartingPointsCompletion(text: string): ParsedStartingPoint[] {
-  const out: ParsedStartingPoint[] = [];
-  const seen = new Set<string>();
-  for (const raw of text.split("\n")) {
-    const line = raw.trim().replace(/^(?:\d+[.)]|[-*•])\s*/, "");
-    if (!line.includes("|")) continue;
-    const [theme, tagline, feelings] = line.split("|").map((part) => part.trim());
-    if (!theme || !tagline) continue;
-    const cleanTheme = theme.replace(/^\*\*|\*\*$/g, "").replace(/^["“]|["”]$/g, "").trim();
-    // Two to five words was the instruction; allow a little drift, not a sentence.
-    if (cleanTheme.length < 3 || cleanTheme.split(/\s+/).length > 7) continue;
-    const key = cleanTheme.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({
-      theme: cleanTheme,
-      tagline: tagline.replace(/^\*\*|\*\*$/g, "").trim(),
-      feelings: (feelings ?? "")
-        .split(",")
-        .map((f) => f.trim().toLowerCase())
-        .filter((f) => f.length > 0 && f.length < 24)
-        .slice(0, 3),
-    });
-  }
-  return out;
-}
-
-/* ── Template opening thought ─────────────────────────────────────────── */
-
-export const TEMPLATE_THOUGHT_SYSTEM_PROMPT = `You write the opening thought waiting in the box after someone picks a theme, before they have written anything themselves.
-
-TWO TO FOUR SENTENCES. Long enough to have a shape, short enough to read at a glance and type over.
-
-IT MUST BELONG TO THE THEME THEY PICKED. This is the rule that matters most. Someone reading the thought with the theme hidden should be able to say which one was clicked. The theme names a situation — put them inside that situation from the first words. Do not write a thought that would fit any theme equally well.
-
-Principles:
-- First person. This is their voice, not a description of them.
-- Plain, spoken language, the way someone actually tells you something across a table.
-- Build it from ordinary concrete things — a mug, a passenger seat, a porch light, an unread message. Specific objects, not abstractions.
-- Vary the sentence lengths. A short one after a long one is what makes it sound like a person.
-- Never invent a specific name, place, or date. It is not your life, and a wrong specific is worse than none.
-- Do not resolve it. No conclusion, no lesson, no tidy final sentence that explains the rest. Leave the ending for the song.
-- Never mention songs, lyrics, writing, or music.
-- This is creative expression, not therapy. Never diagnose, never advise, never write about self-harm.
-
-Theme: "Someone I miss"
-Good: "I still reach for two mugs in the morning. The chair by the window is exactly where it was, and I have not moved it. Some days I catch myself saving things to tell you."
-
-Theme: "Starting over"
-Good: "Everything I own fits in the car again. I keep checking the mirror like I forgot something, but the rooms behind me are empty. Nobody here knows the old version of me yet."
-
-Too generic — could belong to any theme: "Some days are harder than others. I think about how things used to be and wonder what comes next."
-
-Output the thought and nothing else — no quotes, no preamble, no title.`;
-
-export function buildTemplateThoughtUserPrompt(params: {
-  theme: string;
-  tagline: string;
-  feelings: readonly string[];
-  /** Varies the wording between clicks so a second try reads differently. */
-  variation: number;
-}): string {
-  const angles = [
-    "Open on a small physical object that belongs to this situation.",
-    "Open mid-thought, as if continuing a sentence they started in their head.",
-    "Open on the thing they keep doing without meaning to.",
-    "Open by stating plainly what changed, then sit in it.",
-    "Open in an ordinary moment where this surfaces — a room, a drive, a morning.",
-  ];
-  return [
-    `THEY PICKED THIS THEME: ${params.theme}`,
-    `WHAT THE THEME PROMISES THEM: ${params.tagline}`,
-    `FEELINGS IN THE AIR: ${params.feelings.join(", ")}`,
-    ``,
-    `ANGLE FOR THIS ONE: ${angles[params.variation % angles.length]}`,
-    ``,
-    `Write their opening thought. It must be unmistakably about "${params.theme}" —`,
-    `someone who could not see the theme should still be able to name it from`,
-    `what you write.`,
-  ].join("\n");
-}
-
-/** Strips the wrapping quotes and stray labels a model sometimes adds. */
-export function cleanTemplateThought(text: string): string {
-  return text
-    .trim()
-    .replace(/^(?:thought|opening thought)\s*:\s*/i, "")
-    .replace(/^["“']|["”']$/g, "")
-    .trim();
 }
 
 /* ── The guide ────────────────────────────────────────────────────────── */

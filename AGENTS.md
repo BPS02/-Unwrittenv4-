@@ -185,8 +185,10 @@ V4 runs the whole creation flow on **two chat prompts** managed in Langfuse
    production brief handed to the music provider, and `LYRICS:`. Seeded from
    `GENERATOR_SYSTEM_PROMPT`.
 
-The starting-point tiles and template opening thoughts keep their own optional
-prompts — site furniture, not part of the two-prompt core.
+These two are the ONLY prompts — the browse-templates path is model-free:
+starter templates in `lib/templates.ts` are hand-curated under
+research-grounded emotion families, and choosing one selects its feelings
+and a hand-written opening thought instantly.
 
 A prompt only resolves if it carries the **`production` label** — `getPrompt`
 requests that label by default, and an unlabelled prompt silently falls back

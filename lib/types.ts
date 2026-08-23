@@ -155,12 +155,41 @@ export interface EntitlementSummaryWire {
   periodEnd: string | null;
 }
 
+/**
+ * The emotion families the starter templates are organised under. Grounded in
+ * emotion research rather than invented ad hoc: Plutchik's primary emotions
+ * (joy, trust, fear, sadness, anger, anticipation) and their studied blends —
+ * love as joy+trust, nostalgia as the sadness+joy blend — plus the distinct
+ * categories that large-scale studies of self-reported feeling keep finding
+ * (Cowen & Keltner's 27 emotion categories: nostalgia, relief, awe, pride,
+ * calmness as separable states, not shades of "happy" or "sad").
+ */
+export const TEMPLATE_FAMILIES = [
+  "Love",
+  "Loss & grief",
+  "Longing & nostalgia",
+  "Fear & uncertainty",
+  "Anger & defiance",
+  "Joy & gratitude",
+  "Pride & triumph",
+  "Peace & release",
+] as const;
+export type TemplateFamily = (typeof TEMPLATE_FAMILIES)[number];
+
 export interface Template {
   id: string;
+  /** Which emotion family the template belongs to — see TEMPLATE_FAMILIES. */
+  family: TemplateFamily;
   theme: string;
   /** Short evocative tagline shown on the card. */
   tagline: string;
-  starterThought: string;
+  /**
+   * Hand-written opening thoughts, one of which is dropped into the box when
+   * the template is chosen. Several variants so a second try reads
+   * differently — no model writes these.
+   */
+  starterThoughts: readonly string[];
+  /** Pre-selected feeling chips — always drawn from FEELING_CHIPS. */
   feelings: string[];
   /** Decorative glyph for the card. */
   glyph: string;

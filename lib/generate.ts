@@ -1,4 +1,4 @@
-import { generateMockLyrics } from "./mock";
+﻿import { generateMockLyrics } from "./mock";
 import { buildMockStylePrompt } from "./mock";
 import {
   OpenRouterError,
@@ -10,18 +10,12 @@ import {
 import {
   GENERATOR_SYSTEM_PROMPT,
   GUIDE_SYSTEM_PROMPT,
-  STARTING_POINTS_SYSTEM_PROMPT,
-  TEMPLATE_THOUGHT_SYSTEM_PROMPT,
   buildGeneratorUserPrompt,
   buildGuideBriefUserPrompt,
   buildGuideQuestionsUserPrompt,
-  buildStartingPointsUserPrompt,
-  buildTemplateThoughtUserPrompt,
-  cleanTemplateThought,
   parseBriefCompletion,
   parseGeneratorCompletion,
   parseQuestionsCompletion,
-  parseStartingPointsCompletion,
 } from "./prompts";
 import { getManagedPrompt, startGeneration } from "./langfuse";
 import { MIN_QUESTIONS, type SongQuestion } from "./types";
@@ -178,141 +172,6 @@ export async function generateLyrics(req: LyricsRequestParsed): Promise<LyricsOu
     trace.error(err instanceof Error ? err.message : "lyrics failed");
     await trace.flush();
     throw err;
-  }
-}
-
-export interface StartingPointsOutcome {
-  points: Array<{ theme: string; tagline: string; feelings: string[] }>;
-  mode: "demo" | "live";
-}
-
-/**
- * Writes the starting-point tiles themselves.
- *
- * Falls back to the shipped ten (the caller decides how) — a person who came
- * to write must never meet an empty gallery because a model was slow.
- */
-export async function generateStartingPoints(params: {
-  count: number;
-  avoid?: readonly string[];
-  variation: number;
-}): Promise<StartingPointsOutcome> {
-  if (!isOpenRouterConfigured()) return { points: [], mode: "demo" };
-
-  const {
-    text: systemPrompt,
-    source: promptSource,
-    config: promptConfig,
-  } = await getManagedPrompt(
-    process.env.LANGFUSE_STARTING_POINTS_PROMPT_NAME,
-    STARTING_POINTS_SYSTEM_PROMPT
-  );
-  const userPrompt = buildStartingPointsUserPrompt(params);
-  const model = promptConfig.model ?? getModel();
-  const trace = startGeneration({
-    name: "liner-notes-starting-points",
-    model,
-    input: { system: systemPrompt, user: userPrompt },
-    metadata: { promptSource, count: params.count, variation: params.variation },
-  });
-
-  try {
-    const completion = await chatComplete({
-      system: systemPrompt,
-      user: userPrompt,
-      model,
-      temperature: promptConfig.temperature ?? 1,
-      maxTokens: promptConfig.maxTokens ?? 700,
-      reasoning: promptConfig.reasoning,
-    });
-    const points = parseStartingPointsCompletion(completion.text);
-    trace.end(completion.text, {
-      promptTokens: completion.usage?.prompt_tokens,
-      completionTokens: completion.usage?.completion_tokens,
-    });
-    await trace.flush();
-    // Return whatever parsed cleanly. Discarding eight good tiles because a
-    // ninth row was malformed put the curated ten back on screen at random,
-    // which reads as the feature not working — the caller tops up instead.
-    if (points.length === 0) return { points: [], mode: "demo" };
-    return { points: points.slice(0, params.count), mode: "live" };
-  } catch (err) {
-    trace.error(err instanceof Error ? err.message : "starting points failed");
-    await trace.flush();
-    console.error("[generate] starting points fallback:", err);
-    return { points: [], mode: "demo" };
-  }
-}
-
-export interface TemplateThoughtOutcome {
-  thought: string;
-  /** "live" when a model wrote it, "demo" when the shipped starter was used. */
-  mode: "demo" | "live";
-  model?: string;
-}
-
-/**
- * Writes the opening thought a template drops into the box.
- *
- * Unlike the follow-up questions, this DOES fall back — every template already
- * ships a hand-written `starterThought`, so falling back to it is honest
- * rather than passing off a canned line as something written for this person.
- * The caller supplies that fallback; a failure here must never block someone
- * from starting a song.
- */
-export async function generateTemplateThought(params: {
-  theme: string;
-  tagline: string;
-  feelings: readonly string[];
-  fallback: string;
-  variation: number;
-}): Promise<TemplateThoughtOutcome> {
-  if (!isOpenRouterConfigured()) return { thought: params.fallback, mode: "demo" };
-
-  const {
-    text: systemPrompt,
-    source: promptSource,
-    config: promptConfig,
-  } = await getManagedPrompt(
-    process.env.LANGFUSE_TEMPLATE_PROMPT_NAME,
-    TEMPLATE_THOUGHT_SYSTEM_PROMPT
-  );
-  const userPrompt = buildTemplateThoughtUserPrompt(params);
-  const model = promptConfig.model ?? getModel();
-  const trace = startGeneration({
-    name: "liner-notes-template-thought",
-    model,
-    input: { system: systemPrompt, user: userPrompt },
-    metadata: { promptSource, theme: params.theme, variation: params.variation },
-  });
-
-  try {
-    const completion = await chatComplete({
-      system: systemPrompt,
-      user: userPrompt,
-      model,
-      // Warm — two people picking the same tile should not get the same line.
-      temperature: promptConfig.temperature ?? 0.95,
-      // Two to four sentences; the old 220 was sized for a single line.
-      maxTokens: promptConfig.maxTokens ?? 300,
-      reasoning: promptConfig.reasoning,
-    });
-    const thought = cleanTemplateThought(completion.text);
-    trace.end(thought, {
-      promptTokens: completion.usage?.prompt_tokens,
-      completionTokens: completion.usage?.completion_tokens,
-    });
-    await trace.flush();
-    // An empty or absurdly long completion is worse than the shipped starter.
-    if (thought.length < 20 || thought.length > 600) {
-      return { thought: params.fallback, mode: "demo" };
-    }
-    return { thought, mode: "live", model: completion.model };
-  } catch (err) {
-    trace.error(err instanceof Error ? err.message : "template thought failed");
-    await trace.flush();
-    console.error("[generate] template thought fallback:", err);
-    return { thought: params.fallback, mode: "demo" };
   }
 }
 

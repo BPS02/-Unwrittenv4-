@@ -1108,6 +1108,21 @@ body:has(.opening-page) .site-footer {
 
 /* ── Template gallery ────────────────────────────────────────────────── */
 
+/* The hand-curated templates, grouped under their emotion families. */
+.template-families {
+  display: flex;
+  flex-direction: column;
+  gap: 2.4rem;
+}
+.template-family-name {
+  margin: 0 0 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
 .template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
@@ -1919,84 +1934,6 @@ body:has(.opening-page) .site-footer {
  * near-white on the light accent fill.
  */
 
-/* ── Starting points: waiting for the set to be written ──────────────── */
-
-/* The message spans the grid so it reads as one status, not a first tile. */
-.template-grid.is-waiting { position: relative; }
-.start-waiting {
-  grid-column: 1 / -1;
-  margin: 0 0 0.4rem;
-  color: var(--accent);
-  font-size: 0.92rem;
-}
-
-.template-skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  padding: 1.15rem 1.2rem 1.3rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--raised);
-}
-.template-skeleton span {
-  display: block;
-  border-radius: 999px;
-  /* One shared shimmer keeps the ten placeholders in phase, which reads as
-     a single system working rather than ten things loading separately. */
-  background: linear-gradient(
-    90deg,
-    var(--bg-deep) 0%,
-    color-mix(in srgb, var(--line-strong) 55%, var(--bg-deep)) 50%,
-    var(--bg-deep) 100%
-  );
-  background-size: 220% 100%;
-  animation: sk-shimmer 1.5s linear infinite;
-}
-.sk-glyph { width: 1.5rem; height: 1.5rem; border-radius: 6px; }
-.sk-title { width: 68%; height: 0.95rem; }
-.sk-line { width: 88%; height: 0.7rem; }
-.sk-chips { width: 52%; height: 0.7rem; }
-
-@keyframes sk-shimmer {
-  from { background-position: 120% 0; }
-  to { background-position: -120% 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .template-skeleton span { animation: none; }
-}
-
-/* ── Starting-point tiles: writing state ─────────────────────────────── */
-
-.template-card.is-pending {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
-}
-/* The unpicked tiles step back rather than looking broken. */
-.template-card:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-.template-pending {
-  display: block;
-  margin-top: 0.6rem;
-  color: var(--accent);
-  font-size: 0.82rem;
-}
-.template-pending::after {
-  content: "";
-  display: inline-block;
-  width: 0.6rem;
-  text-align: left;
-  animation: template-dots 1.2s steps(4, end) infinite;
-}
-@keyframes template-dots {
-  0% { content: ""; }
-  25% { content: "."; }
-  50% { content: ".."; }
-  75% { content: "..."; }
-}
 
 /* ── Playlists (the vault) ───────────────────────────────────────────── */
 

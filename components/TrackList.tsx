@@ -62,8 +62,8 @@ export default function TrackList(props: TrackListProps) {
                 aria-expanded={open}
                 onClick={() => setOpenId(open ? null : song.id)}
               >
-                <span className="track-art" style={{ background: artFor(song.id) }} aria-hidden="true">
-                  ♪
+                <span className="track-art" style={song.coverArt ? undefined : { background: artFor(song.id) }} aria-hidden="true">
+                  {song.coverArt ? <img src={song.coverArt} alt="" /> : "♪"}
                 </span>
                 <span className="track-info">
                   <strong>{song.title}</strong>

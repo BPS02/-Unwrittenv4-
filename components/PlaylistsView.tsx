@@ -12,6 +12,7 @@ export interface SavedSongWire {
   title: string;
   lyrics: string;
   stylePrompt: string;
+  coverArt?: string | null;
   provider: string;
   createdAt: string;
   unlocked: boolean;
@@ -345,7 +346,7 @@ export default function PlaylistsView() {
       <section className="song-room">
         <button type="button" className="song-room-back" onClick={() => setView({ kind: "grid" })}>← Back to My Songs</button>
         <div className="song-room-stage">
-          <img src="/images/collection-hurt.jpg" alt="Rain on a car window at night" />
+          <img src={song.coverArt ?? "/images/collection-hurt.jpg"} alt={song.coverArt ? `Album cover for ${song.title}` : "Rain on a car window at night"} />
           <div className="song-room-copy">
             <p>Now listening</p>
             <h1>{song.title}</h1>
@@ -545,7 +546,7 @@ export default function PlaylistsView() {
 
       {recentSong && (
         <button type="button" className="continue-song" onClick={() => setView({ kind: "song", id: recentSong.id })}>
-          <img src="/images/collection-hurt.jpg" alt="" />
+          <img src={recentSong.coverArt ?? "/images/collection-hurt.jpg"} alt={recentSong.coverArt ? `Album cover for ${recentSong.title}` : ""} />
           <span className="continue-copy">
             <small>Continue where you left off</small>
             <strong>{recentSong.title}</strong>

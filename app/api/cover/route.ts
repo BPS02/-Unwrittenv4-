@@ -88,7 +88,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (!image?.b64_json && !image?.url) {
       return NextResponse.json({ error: "The image service returned no cover." }, { status: 502 });
     }
-    const imageUrl = image.b64_json ? `data:image/jpeg;base64,${image.b64_json}` : image.url!;
+    let imageUrl = image.b64_json ? `data:image/jpeg;base64,${image.b64_json}` : "";
+    if (!imageUrl && image.url) {
+      const imageResponse = await fetch(image.url, { signal: controller.signal });
+      if (!imageResponse.ok) throw new Error("Could not download generated cover");
+      const mimeType = imageResponse.headers.get("content-type")?.split(";")[0] ?? "image/jpeg";
+      const bytes = Buffer.from(await imageResponse.arrayBuffer());
+      imageUrl = `data:${mimeType};base64,${bytes.toString("base64")}`;
+    }
     return NextResponse.json(
       { imageUrl, model: result.model ?? process.env.OPENROUTER_COVER_MODEL ?? "openai/gpt-image-1" },
       { headers: { "Cache-Control": "private, no-store" } }

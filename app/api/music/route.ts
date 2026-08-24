@@ -170,6 +170,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         return NextResponse.json({
           mode: "demo",
           stylePrompt: render.stylePrompt,
+          coverArt: req.coverArt,
           promptMode,
           quality,
           entitlement: summarize(updated),

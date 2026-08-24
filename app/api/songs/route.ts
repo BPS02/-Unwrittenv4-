@@ -80,6 +80,7 @@ export async function GET(): Promise<NextResponse> {
         title: song.title,
         lyrics: song.lyrics,
         stylePrompt: song.stylePrompt,
+        coverArt: song.coverArt ?? null,
         provider: song.provider,
         createdAt: song.createdAt,
         unlocked: serveMaster,

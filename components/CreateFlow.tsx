@@ -121,6 +121,7 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
   const [missingAnswers, setMissingAnswers] = useState<string[]>([]);
 
   const [song, setSong] = useState<SongDraft | null>(null);
+  const [coverArt, setCoverArt] = useState<string | null>(null);
   const [lyricsStatus, setLyricsStatus] = useState<"loading" | "error" | "ready">("ready");
   const [lyricsError, setLyricsError] = useState<string | null>(null);
 
@@ -504,6 +505,7 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
           // The STYLE brief the generator wrote with these lyrics; the server
           // falls back to a deterministic brief when a restored draft predates it.
           ...(song.style ? { style: song.style } : {}),
+          ...(coverArt ? { coverArt } : {}),
           songId: currentSongId,
         }),
       });
@@ -583,7 +585,7 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
       setMusicError(err instanceof Error ? err.message : "Music generation failed.");
       setMusicStatus("error");
     }
-  }, [controls, song, songId]);
+  }, [controls, coverArt, song, songId]);
 
   // Re-fire a generation that was interrupted by the sign-in redirect.
   useEffect(() => {
@@ -717,6 +719,7 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
     setVariation(0);
     setSongId(null);
     setSong(null);
+    setCoverArt(null);
     setQuestions([]);
     setAnswers({});
     setQuestionsStatus("ready");
@@ -753,6 +756,7 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
     setVariation(0);
     setSongId(null);
     setSong(null);
+    setCoverArt(null);
     setQuestions([]);
     setAnswers({});
     setQuestionsStatus("ready");
@@ -867,6 +871,7 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
             musicMode={musicMode}
             entitlement={entitlement}
             onGenerate={() => void generateMusic()}
+            onCoverReady={setCoverArt}
             onBack={() => setStep("lyrics")}
             onEditDirection={() => goTo("shape")}
             onViewSongs={() => router.push("/songs")}

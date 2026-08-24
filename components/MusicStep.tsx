@@ -74,6 +74,7 @@ interface MusicStepProps {
   musicMode: "demo" | "live";
   entitlement: EntitlementSummaryWire | null;
   onGenerate: () => void;
+  onCoverReady: (imageUrl: string) => void;
   onBack: () => void;
   onEditDirection: () => void;
   onViewSongs: () => void;
@@ -142,12 +143,13 @@ export default function MusicStep(props: MusicStepProps) {
     }).then((result) => {
       setCoverUrl(result.imageUrl);
       setCoverState("ready");
+      props.onCoverReady(result.imageUrl);
     }).catch((error: unknown) => {
       if (error instanceof DOMException && error.name === "AbortError") return;
       setCoverState("error");
     });
     return () => controller.abort();
-  }, [props.status, props.songTitle, props.lyrics, props.controls.genre, props.controls.mood, props.stylePrompt]);
+  }, [props.status, props.songTitle, props.lyrics, props.controls.genre, props.controls.mood, props.stylePrompt, props.onCoverReady]);
 
   const startCheckout = (product: CheckoutProduct) => {
     setCheckoutBusy(product);

@@ -102,6 +102,8 @@ export const songs = pgTable(
     title: text("title").notNull(),
     lyrics: text("lyrics").notNull(),
     stylePrompt: text("style_prompt").notNull().default(""),
+    /** Personalized, text-free AI cover (compact data URL). */
+    coverArt: text("cover_art"),
     provider: text("provider").notNull(),
     mimeType: text("mime_type").notNull(),
     favorite: boolean("favorite").notNull().default(false),

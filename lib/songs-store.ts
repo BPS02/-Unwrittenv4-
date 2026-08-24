@@ -45,6 +45,7 @@ export interface SavedSong {
   title: string;
   lyrics: string;
   stylePrompt: string;
+  coverArt?: string;
   provider: string;
   mimeType: string;
   createdAt: string;
@@ -100,6 +101,7 @@ function rowsToSong(
     title: song.title,
     lyrics: song.lyrics,
     stylePrompt: song.stylePrompt,
+    coverArt: song.coverArt ?? undefined,
     provider: song.provider,
     mimeType: song.mimeType,
     createdAt: song.createdAt.toISOString(),
@@ -157,6 +159,7 @@ export async function saveSongTake(
           title: base.title,
           lyrics: base.lyrics,
           stylePrompt: base.stylePrompt,
+          coverArt: base.coverArt ?? null,
           provider: base.provider,
           mimeType: base.mimeType,
           favorite: base.favorite ?? false,

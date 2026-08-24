@@ -91,6 +91,7 @@ export default function PlaylistsView() {
   const [renaming, setRenaming] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const coverBackfillAttempted = useRef(new Set<string>());
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -125,6 +126,48 @@ export default function PlaylistsView() {
       if (toastTimer.current) clearTimeout(toastTimer.current);
     };
   }, [loadAll]);
+
+  useEffect(() => {
+    const latest = songs[0];
+    if (!latest || latest.coverArt || coverBackfillAttempted.current.has(latest.id)) return;
+    coverBackfillAttempted.current.add(latest.id);
+    const controller = new AbortController();
+    let device = "browser";
+    try {
+      const key = "liner-notes:device:v1";
+      device = sessionStorage.getItem(key) ?? crypto.randomUUID();
+      sessionStorage.setItem(key, device);
+    } catch { /* the server can still rate-limit by address */ }
+
+    void fetch("/api/cover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-LinerNotes-Device": device },
+      body: JSON.stringify({
+        title: latest.title,
+        lyrics: latest.lyrics,
+        genre: "Acoustic / Folk",
+        mood: "Bittersweet",
+        style: latest.stylePrompt,
+      }),
+      signal: controller.signal,
+    }).then(async (response) => {
+      if (!response.ok) throw new Error("cover unavailable");
+      return response.json() as Promise<{ imageUrl: string }>;
+    }).then(async ({ imageUrl }) => {
+      const saved = await fetch(`/api/songs/${encodeURIComponent(latest.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coverArt: imageUrl }),
+        signal: controller.signal,
+      });
+      if (!saved.ok) throw new Error("cover could not be saved");
+      setSongs((current) => current.map((song) => song.id === latest.id ? { ...song, coverArt: imageUrl } : song));
+    }).catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      // Keep the calm fallback art. A later visit may retry the one-time fill.
+    });
+    return () => controller.abort();
+  }, [songs]);
 
   const songById = useMemo(() => {
     const map = new Map<string, SavedSongWire>();

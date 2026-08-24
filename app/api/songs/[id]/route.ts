@@ -24,7 +24,7 @@ async function requireUser(): Promise<string | NextResponse> {
   return userId;
 }
 
-/** PATCH { favorite?: boolean } — updates flags on a saved song. */
+/** PATCH favorite or a generated cover on one owned song. */
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -39,15 +39,25 @@ export async function PATCH(
   } catch {
     return NextResponse.json({ error: "The request body must be JSON." }, { status: 400 });
   }
-  const favorite =
-    body && typeof body === "object" && "favorite" in body ? (body as { favorite: unknown }).favorite : undefined;
-  if (typeof favorite !== "boolean") {
-    return NextResponse.json({ error: "Provide favorite: true or false." }, { status: 400 });
+  const record = body && typeof body === "object" ? body as Record<string, unknown> : {};
+  const favorite = record.favorite;
+  const coverArt = record.coverArt;
+  const patch: { favorite?: boolean; coverArt?: string } = {};
+  if (favorite !== undefined) {
+    if (typeof favorite !== "boolean") return NextResponse.json({ error: "favorite must be true or false." }, { status: 400 });
+    patch.favorite = favorite;
   }
+  if (coverArt !== undefined) {
+    if (typeof coverArt !== "string" || coverArt.length > 2_000_000 || !/^data:image\/(jpeg|png);base64,/.test(coverArt)) {
+      return NextResponse.json({ error: "coverArt must be a valid image data URL." }, { status: 400 });
+    }
+    patch.coverArt = coverArt;
+  }
+  if (Object.keys(patch).length === 0) return NextResponse.json({ error: "Provide favorite or coverArt." }, { status: 400 });
 
-  const updated = await updateSong(userId, id, { favorite });
+  const updated = await updateSong(userId, id, patch);
   if (!updated) return NextResponse.json({ error: "Song not found." }, { status: 404 });
-  return NextResponse.json({ id: updated.id, favorite: updated.favorite === true });
+  return NextResponse.json({ id: updated.id, favorite: updated.favorite === true, coverArt: updated.coverArt ?? null });
 }
 
 /** DELETE — removes the song record and its audio. */

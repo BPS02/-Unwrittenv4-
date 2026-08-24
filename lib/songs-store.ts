@@ -334,7 +334,7 @@ export async function readSong(userId: string, songId: string): Promise<SavedSon
 export async function updateSong(
   userId: string,
   songId: string,
-  patch: Partial<Pick<SavedSong, "favorite" | "title">>
+  patch: Partial<Pick<SavedSong, "favorite" | "title" | "coverArt">>
 ): Promise<SavedSong | null> {
   const db = dbOrNull();
 

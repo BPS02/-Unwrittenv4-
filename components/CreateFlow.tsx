@@ -778,7 +778,7 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
 
   return (
     <div className="flow">
-      {step !== "questions" && !(step === "lyrics" && lyricsStatus === "loading") && (
+      {step !== "questions" && !(step === "lyrics" && lyricsStatus === "loading") && !(step === "music" && musicStatus === "idle") && (
         <Stepper current={step} reached={reached} onNavigate={(target) => target === "write" && mode === "freeform" ? router.push("/") : goTo(target)} />
       )}
 
@@ -862,6 +862,7 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
             onSelectTake={handleSelectTake}
             songTitle={song.title}
             lyrics={song.lyrics}
+            stylePrompt={song.style}
             controls={controls}
             musicMode={musicMode}
             entitlement={entitlement}

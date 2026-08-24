@@ -68,6 +68,7 @@ interface MusicStepProps {
   onSelectTake: (n: number) => void;
   songTitle: string;
   lyrics: string;
+  stylePrompt?: string;
   controls: SongControls;
   /** What this server can actually render — decided server-side. */
   musicMode: "demo" | "live";
@@ -92,6 +93,8 @@ export default function MusicStep(props: MusicStepProps) {
   const [checkoutBusy, setCheckoutBusy] = useState<CheckoutProduct | null>(null);
   // The unlock CTA appears immediately AFTER the first playback finishes.
   const [previewPlayed, setPreviewPlayed] = useState(false);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [coverState, setCoverState] = useState<"loading" | "ready" | "error">("loading");
 
   const isDemo = props.musicMode === "demo";
 
@@ -111,6 +114,41 @@ export default function MusicStep(props: MusicStepProps) {
     if (props.status !== "paywall") setCheckoutBusy(null);
   }, [props.status]);
 
+  useEffect(() => {
+    if (props.status !== "idle") return;
+    const controller = new AbortController();
+    setCoverState("loading");
+    let device = "browser";
+    try {
+      const key = "liner-notes:device:v1";
+      device = sessionStorage.getItem(key) ?? crypto.randomUUID();
+      sessionStorage.setItem(key, device);
+    } catch { /* a cover can still be requested without persistent storage */ }
+
+    void fetch("/api/cover", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-LinerNotes-Device": device },
+      body: JSON.stringify({
+        title: props.songTitle,
+        lyrics: props.lyrics,
+        genre: props.controls.genre,
+        mood: props.controls.mood,
+        style: props.stylePrompt,
+      }),
+      signal: controller.signal,
+    }).then(async (response) => {
+      if (!response.ok) throw new Error("cover unavailable");
+      return response.json() as Promise<{ imageUrl: string }>;
+    }).then((result) => {
+      setCoverUrl(result.imageUrl);
+      setCoverState("ready");
+    }).catch((error: unknown) => {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setCoverState("error");
+    });
+    return () => controller.abort();
+  }, [props.status, props.songTitle, props.lyrics, props.controls.genre, props.controls.mood, props.stylePrompt]);
+
   const startCheckout = (product: CheckoutProduct) => {
     setCheckoutBusy(product);
     void props.onCheckout(product).finally(() => setCheckoutBusy(null));
@@ -124,7 +162,57 @@ export default function MusicStep(props: MusicStepProps) {
     ["Language", props.controls.keepClean ? "Clean" : "Explicit allowed"],
   ];
 
-  const preGenerate = props.status === "idle" || props.status === "loading";
+  const preGenerate = props.status === "loading";
+
+  if (props.status === "idle") {
+    return (
+      <div className="music-review-screen">
+        <div className="music-review-shade" />
+        <header className="music-review-topbar">
+          <button type="button" className="music-review-back" onClick={props.onBack} aria-label="Back to lyrics">←</button>
+          <span>Unwritten</span>
+        </header>
+        <main className="music-review-content">
+          <p className="music-review-kicker">One last listen</p>
+          <h1>How should<br />this song feel?</h1>
+          <p className="music-review-intro">Take one last look at the sound before<br />we bring your words to life.</p>
+
+          <section className="sound-paper" aria-labelledby="your-sound-heading">
+            <div className="sound-paper-head">
+              <h2 id="your-sound-heading">Your sound</h2>
+              <button type="button" onClick={props.onEditDirection}>Change</button>
+            </div>
+            <div className="sound-trio">
+              <div><span aria-hidden="true">♬</span><strong>{props.controls.genre}</strong></div>
+              <div><span aria-hidden="true">☀</span><strong>{props.controls.mood}</strong></div>
+              <div><span aria-hidden="true">♙</span><strong>{props.controls.perspective}</strong></div>
+            </div>
+            <p className="sound-structure">{props.controls.structure.replaceAll("-", "  •  ")}</p>
+            <p className="sound-note">Warm, honest, and close to the voice.</p>
+          </section>
+
+          <section className="song-preview-card">
+            <div className={`ai-cover ${coverState}`} aria-label={coverState === "ready" ? "AI-generated album cover" : "Album cover is being created"}>
+              {coverUrl && <img src={coverUrl} alt={`AI-generated cover for ${props.songTitle}`} />}
+              {!coverUrl && <span>{coverState === "loading" ? "Painting\nyour cover…" : "Unwritten"}</span>}
+            </div>
+            <div className="song-preview-copy">
+              <p>Your song</p>
+              <h2>{props.songTitle}</h2>
+              <span>{props.controls.genre} · {props.controls.mood}</span>
+              <small>🎧 &nbsp; Headphones recommended</small>
+            </div>
+          </section>
+
+          <button type="button" className="music-review-create" onClick={props.onGenerate}>
+            {isDemo ? "Create my song demo" : "Create my full song"} <span aria-hidden="true">→</span>
+          </button>
+          <p className="music-review-timing">Usually ready in 60–90 seconds. <strong>Keep this screen open.</strong></p>
+          <button type="button" className="music-review-lyrics" onClick={props.onBack}>Back to lyrics</button>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="step-panel">
@@ -150,25 +238,6 @@ export default function MusicStep(props: MusicStepProps) {
           ))}
         </dl>
       </section>
-
-      {props.status === "idle" && (
-        <section className="generate-card">
-          <span className="generate-glyph" aria-hidden="true">🎧</span>
-          <p className="generate-kicker">Ready to create</p>
-          <h2 className="generate-title">“{props.songTitle}”</h2>
-          <p className="generate-sub">
-            {props.controls.genre} <span aria-hidden="true">•</span> {props.controls.mood}
-          </p>
-          <button type="button" className="btn btn-primary btn-lg btn-generate" onClick={props.onGenerate}>
-            {isDemo ? "Generate demo music" : "Generate full song"} <span aria-hidden="true">→</span>
-          </button>
-          <p className="generate-timing">
-            {isDemo
-              ? "A short instrumental sketch, synthesized in your browser in a few seconds."
-              : "Usually takes about 60–90 seconds. Keep this tab open."}
-          </p>
-        </section>
-      )}
 
       {props.status === "loading" && (
         <section className="generate-card is-working" role="status" aria-live="polite">

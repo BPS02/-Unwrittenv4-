@@ -69,6 +69,9 @@
     linear-gradient(160deg, #071d2d 0%, #061511 58%, #050b0b 100%);
   opacity: 1;
   transition: opacity 500ms ease, visibility 500ms ease;
+  /* CSS owns the escape hatch: if hydration is delayed (for example while
+     Clerk loads in development), the splash still gets out of the way. */
+  animation: splash-auto-hide 500ms ease 1950ms forwards;
 }
 
 .app-splash.is-leaving {
@@ -135,11 +138,22 @@
   55% { opacity: 1; transform: scale(1.06); }
 }
 
+@keyframes splash-auto-hide {
+  to {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .app-splash,
   .app-splash-content,
   .app-splash-glow {
     animation: none;
+    transition-duration: 100ms;
+  }
+  .app-splash {
+    animation: splash-auto-hide 1ms linear 300ms forwards;
     transition-duration: 100ms;
   }
 }
@@ -4608,3 +4622,23 @@ textarea.lyrics-workspace-sheet:focus { outline: none; }
   line-height: 1.55;
 }
 .shared-song-card > .btn { width: 100%; }
+
+/* Final sound review */
+.music-review-screen{position:relative;min-height:100dvh;margin:-1.5rem calc(50% - 50vw);overflow:hidden;color:#f8f0df;background:#120e0b url('/images/music-review.jpg') center top/cover no-repeat;font-family:Georgia,'Times New Roman',serif}
+.music-review-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,6,5,.32),rgba(7,6,5,.08) 42%,rgba(7,6,5,.45));pointer-events:none}
+.music-review-topbar,.music-review-content{position:relative;z-index:1}
+.music-review-topbar{display:grid;grid-template-columns:3rem 1fr 3rem;align-items:center;width:min(100%,592px);margin:auto;padding:1.7rem 2.25rem 0;font-size:1.65rem;font-weight:700;text-align:center}
+.music-review-back{border:0;color:inherit;background:transparent;font:400 2rem/1 sans-serif;cursor:pointer}
+.music-review-content{width:min(100%,540px);margin:auto;padding:2.5rem 1.7rem 3rem;text-align:center}
+.music-review-kicker{margin:0 0 .85rem;color:#d99a42;font:700 .78rem/1.2 system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase}
+.music-review-content>h1{margin:0;font-size:clamp(2.8rem,10vw,4rem);font-weight:500;line-height:.98}
+.music-review-intro{margin:1.2rem 0 1.8rem;color:rgba(248,240,223,.72);font:400 1rem/1.55 system-ui,sans-serif}
+.sound-paper{padding:1.35rem 1.65rem 1.25rem;border-radius:1.35rem;color:#28231e;background:#eee6d6;box-shadow:0 18px 45px rgba(0,0,0,.22);text-align:left}
+.sound-paper-head{display:flex;align-items:center;justify-content:space-between}.sound-paper-head h2{margin:0;font-size:1.5rem}.sound-paper-head button{border:0;border-bottom:1px solid currentColor;color:#64716a;background:transparent;font:600 .9rem system-ui,sans-serif;cursor:pointer}
+.sound-trio{display:grid;grid-template-columns:repeat(3,1fr);margin-top:1rem}.sound-trio>div{display:flex;min-width:0;padding:.25rem .7rem .8rem;flex-direction:column;align-items:center;gap:.35rem;text-align:center}.sound-trio>div+div{border-left:1px solid rgba(64,54,42,.2)}.sound-trio span{color:#6e7350;font:400 2rem/1 serif}.sound-trio strong{font-size:1.05rem;line-height:1.05;text-transform:capitalize;overflow-wrap:anywhere}
+.sound-structure{margin:.3rem 0 0;padding:.9rem 0 .25rem;border-top:1px solid rgba(64,54,42,.2);font:700 .9rem/1.3 system-ui,sans-serif;text-align:center;text-transform:capitalize}.sound-note{margin:.65rem 0 0;color:#666948;font-size:1.1rem;font-style:italic;text-align:center}
+.song-preview-card{display:grid;grid-template-columns:9rem 1fr;gap:1rem;margin-top:1.1rem;padding:.9rem;border:1px solid rgba(204,166,100,.38);border-radius:.55rem;background:rgba(18,29,33,.94);box-shadow:0 16px 36px rgba(0,0,0,.32);text-align:left}
+.ai-cover{display:grid;aspect-ratio:1;place-items:center;overflow:hidden;border:1px solid rgba(215,172,99,.6);color:rgba(244,232,209,.72);background:radial-gradient(circle at 70% 25%,#b46a2d,transparent 24%),linear-gradient(145deg,#122227,#5d321d);white-space:pre-line;font-size:.7rem;line-height:1.4;text-align:center}.ai-cover.loading{animation:cover-breathe 1.7s ease-in-out infinite alternate}.ai-cover img{width:100%;height:100%;object-fit:cover}@keyframes cover-breathe{to{filter:brightness(1.3)}}
+.song-preview-copy{display:flex;min-width:0;flex-direction:column;justify-content:center}.song-preview-copy>p{margin:0 0 .45rem;color:#7ca0a6;font:700 .7rem system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase}.song-preview-copy h2{margin:0;color:#f8f0df;font-size:clamp(1.35rem,5vw,1.85rem);font-weight:500;line-height:1.05}.song-preview-copy>span{margin-top:.55rem;color:#7e9d9d;font:500 .85rem system-ui,sans-serif}.song-preview-copy small{margin-top:.8rem;padding-top:.7rem;border-top:1px solid rgba(215,172,99,.25);color:rgba(248,240,223,.65);font:500 .75rem system-ui,sans-serif}
+.music-review-create{display:flex;width:90%;margin:1.15rem auto .65rem;padding:1.05rem 1.7rem;border:0;border-radius:999px;align-items:center;justify-content:space-between;color:#17120d;background:#dfa340;box-shadow:0 8px 25px rgba(0,0,0,.28);font:700 1.15rem system-ui,sans-serif;cursor:pointer}.music-review-create span{font-size:1.8rem;font-weight:400}.music-review-timing{margin:0;color:rgba(248,240,223,.62);font:400 .76rem/1.5 system-ui,sans-serif}.music-review-lyrics{margin-top:1.4rem;padding:.25rem;border:0;border-bottom:1px solid currentColor;color:#8ea5a1;background:transparent;font:500 .92rem system-ui,sans-serif;cursor:pointer}
+@media(max-width:430px){.music-review-topbar{padding-inline:1.25rem}.music-review-content{padding:2rem 1rem 2.5rem}.song-preview-card{grid-template-columns:7.4rem 1fr}.sound-paper{padding-inline:1rem}.sound-trio>div{padding-inline:.35rem}}

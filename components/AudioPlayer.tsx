@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 interface AudioPlayerProps {
   src: string;
+  /** Begin playback when opened from an explicit user action. */
+  autoPlay?: boolean;
   /** Fired once metadata gives a real duration, so callers can cache it. */
   onDuration?: (seconds: number) => void;
   onEnded?: () => void;
@@ -32,7 +34,7 @@ function formatTime(seconds: number): string {
  * stuttering bar. rAF runs only while playing, so an idle player costs
  * nothing.
  */
-export default function AudioPlayer({ src, onDuration, onEnded, compact }: AudioPlayerProps) {
+export default function AudioPlayer({ src, autoPlay, onDuration, onEnded, compact }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
@@ -75,6 +77,16 @@ export default function AudioPlayer({ src, onDuration, onEnded, compact }: Audio
     setBuffered(0);
     setFailed(false);
   }, [src]);
+
+  useEffect(() => {
+    if (!autoPlay) return;
+    const audio = audioRef.current;
+    if (!audio) return;
+    // This player is mounted by an explicit click on the featured song card.
+    // Browsers that retain that user activation start immediately; stricter
+    // autoplay policies simply leave the visible Play button ready to use.
+    void audio.play().catch(() => undefined);
+  }, [autoPlay, src]);
 
   const seekToClientX = useCallback(
     (clientX: number): number => {
@@ -135,6 +147,7 @@ export default function AudioPlayer({ src, onDuration, onEnded, compact }: Audio
       <audio
         ref={audioRef}
         src={src}
+        autoPlay={autoPlay}
         preload="metadata"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}

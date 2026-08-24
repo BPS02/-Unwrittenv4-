@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { artFor } from "@/lib/cover-art";
+import { lyricsForReading } from "@/lib/lyrics-display";
+import AudioPlayer from "./AudioPlayer";
 import TrackList from "./TrackList";
 
 export interface SavedSongWire {
@@ -44,7 +46,7 @@ const SORT_LABELS: Record<Sort, string> = {
  */
 type AutoKey = "liked" | "all";
 
-type View = { kind: "grid" } | { kind: "auto"; key: AutoKey } | { kind: "playlist"; id: string };
+type View = { kind: "grid" } | { kind: "song"; id: string } | { kind: "auto"; key: AutoKey } | { kind: "playlist"; id: string };
 
 function errorMessageFrom(data: unknown, fallback: string): string {
   return data && typeof data === "object" && "error" in data && typeof data.error === "string"
@@ -73,13 +75,16 @@ function CollageArt({ songIds, glyph }: { songIds: string[]; glyph?: string }) {
 }
 
 export default function PlaylistsView() {
-  const [songs, setSongs] = useState<SavedSongWire[] | null>(null);
+  // Render the library shell immediately; saved data hydrates into it without
+  // replacing the whole page with an "Opening your vault" interstitial.
+  const [songs, setSongs] = useState<SavedSongWire[]>([]);
   const [playlists, setPlaylists] = useState<PlaylistWire[]>([]);
   const [detailSongIds, setDetailSongIds] = useState<Record<string, string[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<View>({ kind: "grid" });
   const [sort, setSort] = useState<Sort>("recent");
   const [sortOpen, setSortOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [renaming, setRenaming] = useState(false);
@@ -122,11 +127,11 @@ export default function PlaylistsView() {
 
   const songById = useMemo(() => {
     const map = new Map<string, SavedSongWire>();
-    for (const s of songs ?? []) map.set(s.id, s);
+    for (const s of songs) map.set(s.id, s);
     return map;
   }, [songs]);
 
-  const liked = useMemo(() => (songs ?? []).filter((s) => s.favorite), [songs]);
+  const liked = useMemo(() => songs.filter((s) => s.favorite), [songs]);
 
   const sortedPlaylists = useMemo(() => {
     const list = [...playlists];
@@ -136,6 +141,12 @@ export default function PlaylistsView() {
     }
     return list.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
   }, [playlists, sort]);
+
+  const visiblePlaylists = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase();
+    if (!term) return sortedPlaylists;
+    return sortedPlaylists.filter((playlist) => playlist.name.toLocaleLowerCase().includes(term));
+  }, [search, sortedPlaylists]);
 
   /* ── Playlist mutations ───────────────────────────────────────────── */
 
@@ -214,7 +225,7 @@ export default function PlaylistsView() {
 
   const toggleFavorite = async (song: SavedSongWire) => {
     const next = !song.favorite;
-    setSongs((prev) => prev?.map((s) => (s.id === song.id ? { ...s, favorite: next } : s)) ?? prev);
+    setSongs((prev) => prev.map((s) => (s.id === song.id ? { ...s, favorite: next } : s)));
     try {
       const res = await fetch(`/api/songs/${encodeURIComponent(song.id)}`, {
         method: "PATCH",
@@ -223,7 +234,7 @@ export default function PlaylistsView() {
       });
       if (!res.ok) throw new Error();
     } catch {
-      setSongs((prev) => prev?.map((s) => (s.id === song.id ? { ...s, favorite: !next } : s)) ?? prev);
+      setSongs((prev) => prev.map((s) => (s.id === song.id ? { ...s, favorite: !next } : s)));
       showToast("Couldn't update that — try again");
     }
   };
@@ -232,7 +243,7 @@ export default function PlaylistsView() {
     try {
       const res = await fetch(`/api/songs/${encodeURIComponent(song.id)}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
-      setSongs((prev) => prev?.filter((s) => s.id !== song.id) ?? prev);
+      setSongs((prev) => prev.filter((s) => s.id !== song.id));
       // Membership cascades server-side; mirror it locally so counts agree.
       setDetailSongIds((prev) => {
         const next: Record<string, string[]> = {};
@@ -312,15 +323,6 @@ export default function PlaylistsView() {
     );
   }
 
-  if (songs === null) {
-    return (
-      <section className="songs-empty" role="status" aria-live="polite">
-        <span aria-hidden="true">♫</span>
-        <h1>Opening your vault…</h1>
-      </section>
-    );
-  }
-
   const trackActions = {
     playlists: playlists.map((p) => ({ id: p.id, name: p.name })),
     onToggleFavorite: toggleFavorite,
@@ -332,6 +334,42 @@ export default function PlaylistsView() {
     onUnlock: (song: SavedSongWire) => void startUnlock(song),
     onShare: (song: SavedSongWire) => void shareSong(song),
   };
+
+  // ── Listening room: opened by the featured "continue" card ──
+  if (view.kind === "song") {
+    const song = songById.get(view.id);
+    if (!song) {
+      return <section className="songs-empty"><h1>Song not found</h1><button type="button" className="btn btn-primary" onClick={() => setView({ kind: "grid" })}>Back to My Songs</button></section>;
+    }
+    return (
+      <section className="song-room">
+        <button type="button" className="song-room-back" onClick={() => setView({ kind: "grid" })}>← Back to My Songs</button>
+        <div className="song-room-stage">
+          <img src="/images/collection-hurt.jpg" alt="Rain on a car window at night" />
+          <div className="song-room-copy">
+            <p>Now listening</p>
+            <h1>{song.title}</h1>
+            <span>{song.provider} · {song.unlocked ? "Full song" : "Preview"}</span>
+            {song.streamPath ? (
+              <AudioPlayer src={song.streamPath} autoPlay />
+            ) : (
+              <p className="field-hint">This song’s audio is no longer in the listening cache. Generate it again to keep listening.</p>
+            )}
+            <div className="song-room-actions">
+              <button type="button" aria-pressed={song.favorite} onClick={() => void toggleFavorite(song)}>{song.favorite ? "♥ Liked" : "♡ Like"}</button>
+              {song.streamPath && <button type="button" onClick={() => void shareSong(song)}>↗ Share</button>}
+              {song.downloadable && song.streamPath && <a href={`${song.streamPath}?download=1`} download>↓ Download</a>}
+            </div>
+          </div>
+        </div>
+        <details className="song-room-lyrics">
+          <summary>Read the lyrics</summary>
+          <pre>{lyricsForReading(song.lyrics)}</pre>
+        </details>
+        {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
+      </section>
+    );
+  }
 
   // ── Detail: one playlist, or one of the two derived views ──
   if (view.kind !== "grid") {
@@ -455,13 +493,25 @@ export default function PlaylistsView() {
   }
 
   // ── Grid ──
+  const recentSong = songs[0] ?? null;
   return (
-    <section className="pl-page">
-      <div className="pl-topbar">
-        <Link href="/create" className="pl-close" aria-label="Back to creating">
-          ✕
-        </Link>
-        <span className="pl-crumb is-current">Playlists</span>
+    <section className="pl-page pl-library">
+      <header className="library-heading">
+        <h1>Your songs,<br />in one place.</h1>
+        <p>Every feeling you’ve turned into lyrics lives here.</p>
+        <span>{songs.length} {songs.length === 1 ? "song" : "songs"} <i>·</i> {playlists.length + 2} collections</span>
+      </header>
+
+      <label className="library-search">
+        <span aria-hidden="true">⌕</span>
+        <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a song or collection" />
+      </label>
+
+      <div className="library-controls">
+        <div className="library-tabs" role="group" aria-label="Library view">
+          <button type="button" onClick={() => setView({ kind: "auto", key: "all" })}>Songs</button>
+          <button type="button" className="is-active">Collections</button>
+        </div>
         <div className="pl-sort">
           <button
             type="button"
@@ -491,6 +541,24 @@ export default function PlaylistsView() {
             </div>
           )}
         </div>
+      </div>
+
+      {recentSong && (
+        <button type="button" className="continue-song" onClick={() => setView({ kind: "song", id: recentSong.id })}>
+          <img src="/images/collection-hurt.jpg" alt="" />
+          <span className="continue-copy">
+            <small>Continue where you left off</small>
+            <strong>{recentSong.title}</strong>
+            <em>{recentSong.provider} · Saved recently</em>
+            <i aria-hidden="true">▶</i>
+          </span>
+          <b aria-hidden="true">•••</b>
+        </button>
+      )}
+
+      <div className="collection-title-row">
+        <h2>Your collections</h2>
+        <button type="button" className="add-playlist-button" onClick={() => setCreating(true)}>＋ Add Playlist</button>
       </div>
 
       <div className="pl-grid">
@@ -534,11 +602,7 @@ export default function PlaylistsView() {
             </div>
           </form>
         ) : (
-          <button type="button" className="pl-tile pl-tile-new" onClick={() => setCreating(true)}>
-            <span className="pl-art pl-art-new" aria-hidden="true">+</span>
-            <strong>New playlist</strong>
-            <span className="pl-tile-sub">Group songs however you like</span>
-          </button>
+          null
         )}
 
         <button
@@ -546,11 +610,10 @@ export default function PlaylistsView() {
           className="pl-tile"
           onClick={() => setView({ kind: "auto", key: "liked" })}
         >
-          <CollageArt songIds={liked.slice(0, 4).map((s) => s.id)} glyph="★" />
-          <strong>Liked songs</strong>
+          <span className="pl-photo-art" style={{ backgroundImage: "url('/images/collection-liked.jpg')" }} />
+          <strong><i aria-hidden="true">♡</i> Liked songs</strong>
           <span className="pl-tile-sub">
-            <span className="pl-auto-tag">Auto playlist</span>
-            {liked.length} {liked.length === 1 ? "track" : "tracks"}
+            {liked.length} {liked.length === 1 ? "song" : "songs"}
           </span>
         </button>
 
@@ -559,25 +622,26 @@ export default function PlaylistsView() {
           className="pl-tile"
           onClick={() => setView({ kind: "auto", key: "all" })}
         >
-          <CollageArt songIds={songs.slice(0, 4).map((s) => s.id)} />
-          <strong>All songs</strong>
+          <span className="pl-photo-art" style={{ backgroundImage: "url('/images/collection-all.jpg')" }} />
+          <strong><i aria-hidden="true">▱</i> All songs</strong>
           <span className="pl-tile-sub">
-            <span className="pl-auto-tag">Auto playlist</span>
-            {songs.length} {songs.length === 1 ? "track" : "tracks"}
+            {songs.length} {songs.length === 1 ? "song" : "songs"}
           </span>
         </button>
 
-        {sortedPlaylists.map((playlist) => (
+        {visiblePlaylists.map((playlist, index) => (
           <button
             key={playlist.id}
             type="button"
             className="pl-tile"
             onClick={() => void openPlaylist(playlist.id)}
           >
-            <CollageArt songIds={playlist.coverSongIds} />
-            <strong>{playlist.name}</strong>
+            {index === 0
+              ? <span className="pl-photo-art" style={{ backgroundImage: "url('/images/collection-hurt.jpg')" }} />
+              : <CollageArt songIds={playlist.coverSongIds} />}
+            <strong><i aria-hidden="true">♧</i> {playlist.name}</strong>
             <span className="pl-tile-sub">
-              {playlist.trackCount} {playlist.trackCount === 1 ? "track" : "tracks"}
+              {playlist.trackCount} {playlist.trackCount === 1 ? "song" : "songs"}
             </span>
           </button>
         ))}

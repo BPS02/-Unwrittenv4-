@@ -778,7 +778,9 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
 
   return (
     <div className="flow">
-      <Stepper current={step} reached={reached} onNavigate={(target) => target === "write" && mode === "freeform" ? router.push("/") : goTo(target)} />
+      {step !== "questions" && !(step === "lyrics" && lyricsStatus === "loading") && (
+        <Stepper current={step} reached={reached} onNavigate={(target) => target === "write" && mode === "freeform" ? router.push("/") : goTo(target)} />
+      )}
 
       <div ref={panelRef} tabIndex={-1} style={{ outline: "none" }}>
         {step === "write" && (

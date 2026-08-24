@@ -6,10 +6,9 @@ import { hasPerformanceTags, lyricsForReading } from "@/lib/lyrics-display";
 import type { SongControls, SongInput } from "@/lib/types";
 
 const WRITING_MESSAGES = [
-  "Listening to what you wrote.",
-  "Finding the images worth keeping.",
-  "Setting your words to a rhythm.",
-  "Shaping verses and a chorus.",
+  "Holding the memory",
+  "Finding the feeling",
+  "Shaping the lyrics",
 ];
 
 export interface SongDraft {
@@ -48,17 +47,37 @@ export default function LyricsStep(props: LyricsStepProps) {
     if (props.status !== "loading") return;
     setMsgIndex(0);
     const interval = setInterval(
-      () => setMsgIndex((index) => (index + 1) % WRITING_MESSAGES.length),
-      2600
+      () => setMsgIndex((index) => Math.min(index + 1, WRITING_MESSAGES.length - 1)),
+      3200
     );
     return () => clearInterval(interval);
   }, [props.status]);
 
   if (props.status === "loading") {
     return (
-      <div className="step-panel loading-stage" role="status" aria-live="polite">
-        <div className="breath" aria-hidden="true"><span /><span /><span /><span /></div>
-        <p>{WRITING_MESSAGES[msgIndex]}</p>
+      <div className="step-panel lyrics-writing-screen" role="status" aria-live="polite">
+        <div className="lyrics-writing-topbar">
+          <button type="button" onClick={props.onBack} aria-label="Back to questions">←</button>
+          <span>Unwritten</span>
+          <i aria-hidden="true" />
+        </div>
+
+        <div className="lyrics-writing-copy">
+          <p>WRITING YOUR FIRST DRAFT</p>
+          <h1>Your story is<br />taking shape.</h1>
+          <span>We’re holding onto the details you shared<br />and finding the words that fit.</span>
+        </div>
+
+        <ol className="lyrics-writing-progress">
+          {WRITING_MESSAGES.map((message, index) => (
+            <li key={message} className={index === msgIndex ? "is-current" : index < msgIndex ? "is-done" : undefined}>
+              <span aria-hidden="true">{index < msgIndex ? "✓" : ""}</span>
+              <p>{message}</p>
+            </li>
+          ))}
+        </ol>
+
+        <p className="lyrics-writing-close">Take a breath. Your first draft will open<br />when it’s ready.</p>
       </div>
     );
   }

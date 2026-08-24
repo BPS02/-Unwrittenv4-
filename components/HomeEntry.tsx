@@ -1,37 +1,25 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import AccountControls from "./AccountControls";
-import { DRAFT_KEY, PENDING_ACTION_KEY, packExpiring, unpackExpiring } from "@/lib/draft-storage";
+import PixelField from "./PixelField";
+import { DRAFT_KEY, packExpiring, unpackExpiring } from "@/lib/draft-storage";
+import { getTemplate } from "@/lib/templates";
 import { DEFAULT_CONTROLS, EMPTY_INPUT, type SongControls, type SongInput } from "@/lib/types";
 import { MAX_THOUGHT_LENGTH, MIN_THOUGHT_WORDS, thoughtWordCount } from "@/lib/validation";
 
 export const SENTENCE_STARTERS = [
   "I keep thinking about…",
   "I never told you…",
-  "It’s been a year since…",
-  "Lately I feel like…",
-  "The last time I saw you…",
+  "Lately I feel…",
 ] as const;
 
-/**
- * The stages of making a song, shown so step one feels like a journey.
- * Keep in step with STEP_ORDER in components/Stepper.tsx — this strip is a
- * promise about what happens next, and it was silently a step short when the
- * Questions step landed.
- */
-const JOURNEY = ["Write", "Shape", "Questions", "Lyrics", "Music"] as const;
-
-/**
- * Ambient hero video. Read at build time (NEXT_PUBLIC_), so an unset value
- * removes the element entirely rather than shipping a broken source.
- * Point it at a file in /public, e.g. "/hero.mp4".
- */
-const HERO_VIDEO = process.env.NEXT_PUBLIC_HERO_VIDEO || "";
-// Defaults to the still the page already uses, so the first paint is
-// identical whether or not the video ever loads.
-const HERO_POSTER = process.env.NEXT_PUBLIC_HERO_POSTER || "/images/home-twilight.png";
+const HOME_TEMPLATES = [
+  { id: "someone-i-miss", title: "A person I miss", note: "Turn a memory into something lasting", icon: "portrait" },
+  { id: "something-unsaid", title: "Something I never said", note: "Write the words you held back", icon: "letter" },
+  { id: "starting-over", title: "Where I am right now", note: "Capture this chapter of your life", icon: "horizon" },
+] as const;
 
 interface StoredDraft {
   input?: SongInput;
@@ -39,56 +27,49 @@ interface StoredDraft {
   mode?: string;
 }
 
+function TemplateIcon({ name }: { name: (typeof HOME_TEMPLATES)[number]["icon"] }) {
+  if (name === "letter") {
+    return <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M5 12l19 16 19-16M7 10h34v28H7z" /><path className="home-template-accent" d="M20 21c2-5 9-3 8 1-1-4 6-6 8-1 1 4-5 8-8 10-3-2-9-6-8-10z" /></svg>;
+  }
+  if (name === "horizon") {
+    return <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="13" cy="13" r="5" /><path d="M13 3v4M13 19v4M3 13h4M19 13h4M5.8 5.8l3 3M17.2 17.2l3 3M20.2 5.8l-3 3M4 40c7-8 13-8 20-4 7 4 12 2 20-6M4 32c8-5 14-5 21-1M26 26c6 2 11 1 18-4" /></svg>;
+  }
+  return <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M9 5h29l3 34H12z" /><path d="M14 10h19v20H14z" /><circle cx="24" cy="17" r="4" /><path d="M16 28c3-5 7-7 10-5 3 2 5 2 7 0" /></svg>;
+}
+
 export default function HomeEntry({ clerkEnabled = true }: { clerkEnabled?: boolean }) {
   const router = useRouter();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [thought, setThought] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const draft = unpackExpiring<StoredDraft>(sessionStorage.getItem(DRAFT_KEY));
     if (draft?.mode === "freeform" && draft.input?.thought) setThought(draft.input.thought);
   }, []);
 
-  function continueWithThought(event: FormEvent<HTMLFormElement>) {
+  function saveAndContinue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const value = thought.trim();
     if (thoughtWordCount(value) < MIN_THOUGHT_WORDS) {
-      setError("Share at least a few words to begin.");
+      setError("Share at least a few honest words to begin.");
+      textareaRef.current?.focus();
       return;
     }
     if (value.length > MAX_THOUGHT_LENGTH) {
       setError("Please keep this under 2,000 characters.");
       return;
     }
-
     const previous = unpackExpiring<StoredDraft>(sessionStorage.getItem(DRAFT_KEY));
     sessionStorage.setItem(DRAFT_KEY, packExpiring({
-      step: "shape",
-      reached: "shape",
-      mode: "freeform",
+      step: "shape", reached: "shape", mode: "freeform",
       input: { ...EMPTY_INPUT, ...previous?.input, thought: value, templateId: undefined },
-      controls: { ...DEFAULT_CONTROLS, ...previous?.controls },
-      variation: 0,
-      song: null,
+      controls: { ...DEFAULT_CONTROLS, ...previous?.controls }, variation: 0, song: null,
     }));
     router.push("/create");
   }
 
-  function resetEverything() {
-    try {
-      sessionStorage.removeItem(DRAFT_KEY);
-      sessionStorage.removeItem(PENDING_ACTION_KEY);
-    } catch {
-      // Storage may be unavailable; clearing the field still helps.
-    }
-    setThought("");
-    setError(null);
-    textareaRef.current?.focus();
-  }
-
   function insertStarter(starter: string) {
-    if (thought) return;
     setThought(starter);
     setError(null);
     requestAnimationFrame(() => {
@@ -97,124 +78,80 @@ export default function HomeEntry({ clerkEnabled = true }: { clerkEnabled?: bool
     });
   }
 
-  const nearLimit = thought.length > MAX_THOUGHT_LENGTH - 200;
+  function startFromTemplate(templateId: string) {
+    const template = getTemplate(templateId);
+    if (!template) {
+      router.push("/create/start");
+      return;
+    }
+    sessionStorage.setItem(DRAFT_KEY, packExpiring({
+      step: "write", reached: "write", mode: "template",
+      input: {
+        ...EMPTY_INPUT,
+        thought: template.starterThoughts[0] ?? "",
+        feelings: [...template.feelings],
+        templateId: template.id,
+      },
+      controls: { ...DEFAULT_CONTROLS, ...template.suggested },
+      variation: 0, song: null, songId: null, questions: [], answers: {},
+    }));
+    router.push("/create");
+  }
 
   return (
-    <section className={`opening-page${thought ? " is-writing" : ""}`}>
-      {/*
-        Ambient hero video, behind everything. Only rendered when
-        NEXT_PUBLIC_HERO_VIDEO names a file in /public — with no file the
-        page keeps the gradient it has always had, so this can ship before
-        the asset does and never 404s.
-
-        `poster` is the still, so the first paint is identical whether or not
-        the video ever loads. `preload="none"` keeps it off the critical path;
-        it is decoration, and the box someone types into must not wait for it.
-      */}
-      {HERO_VIDEO && (
-        <video
-          className="opening-video"
-          aria-hidden="true"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="none"
-          poster={HERO_POSTER}
-          src={HERO_VIDEO}
-        />
-      )}
-      {/*
-        The page's own background carries darkening veils that keep the
-        headline legible. A negative-z-index child paints ABOVE a parent's
-        background, so the video would land on top of those veils — this
-        replaces them over the video.
-      */}
-      {HERO_VIDEO && <div className="opening-scrim" aria-hidden="true" />}
-      <div className="opening-waves" aria-hidden="true">
-        <span className="opening-wave opening-wave-one" />
-        <span className="opening-wave opening-wave-two" />
-        <span className="opening-wave opening-wave-three" />
-      </div>
-      <div className="opening-grain" aria-hidden="true" />
-      <div className="opening-brand" aria-label="Unwritten">
-        <svg viewBox="0 0 46 24" role="img" aria-label="Flowing wave"><path d="M2 12c5.2 0 5.2-7 10.4-7s5.2 14 10.4 14S28 5 33.2 5 38.4 12 44 12" /></svg>
-        <span>UNWRITTEN</span>
-      </div>
-      <div className="opening-account"><AccountControls enabled={clerkEnabled} compact /></div>
-
-      <div className="opening-content">
-        <ol className="opening-journey" aria-label="How a song gets made">
-          {JOURNEY.map((stage, index) => (
-            <li key={stage} className={index === 0 ? "is-current" : undefined} aria-current={index === 0 ? "step" : undefined}>
-              <span className="opening-journey-dot" aria-hidden="true" />
-              <span className="opening-journey-label">{stage}</span>
-            </li>
-          ))}
-        </ol>
-
-        <header className="opening-copy">
-          <p className="opening-eyebrow">Write it <span aria-hidden="true">·</span> Answer <span aria-hidden="true">·</span> Hear it</p>
-          <h1>The details are what make it <em>yours</em>.</h1>
-          <p className="opening-sub">Tell us the moment.<br />We’ll ask what only you could know — then write the lyrics around it.</p>
+    <main className={`home-journal${thought ? " is-writing" : ""}`}>
+      <PixelField />
+      <div className="home-ambient" aria-hidden="true" />
+      <div className="home-journal-inner">
+        <header className="home-intro">
+          <p className="home-kicker">UNWRITTEN</p>
+          <h1>Take your time.</h1>
+          <span className="home-title-stroke" aria-hidden="true" />
+          <p>Start with the moment<br />you can’t stop thinking about.</p>
         </header>
 
-        <form className="opening-card" onSubmit={continueWithThought} noValidate>
-          <div className="opening-card-glow" aria-hidden="true" />
-          <label className="opening-card-label" htmlFor="opening-thought">
-            <span className="opening-card-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v3M12 18v3M4.2 7.5l2.6 1.5M17.2 15l2.6 1.5M4.2 16.5l2.6-1.5M17.2 9l2.6-1.5" strokeLinecap="round" /><circle cx="12" cy="12" r="3.4" /></svg>
-            </span>
-            What’s on your mind?
-          </label>
-
-          <div className={`opening-input-shell${error ? " has-error" : ""}`}>
-            <textarea
-              ref={textareaRef}
-              id="opening-thought"
-              value={thought}
+        <form className="home-writing-form" onSubmit={saveAndContinue} noValidate>
+          <section className="home-paper" aria-labelledby="home-thought-title">
+            <span className="home-paper-shadow" aria-hidden="true" />
+            <h2 id="home-thought-title">What’s been on your<br />mind lately?</h2>
+            <span className="home-paper-rule" aria-hidden="true" />
+            <textarea ref={textareaRef} value={thought}
               onChange={(event) => { setThought(event.target.value); setError(null); }}
               placeholder="Write a thought, memory, confession, or feeling…"
-              rows={4}
-              aria-invalid={Boolean(error)}
-              aria-describedby={error ? "opening-error" : "opening-help"}
-              autoFocus
-            />
+              maxLength={MAX_THOUGHT_LENGTH} rows={5} aria-invalid={Boolean(error)}
+              aria-describedby={error ? "home-thought-error" : "home-thought-help"} />
+            <p id="home-thought-help" className="home-paper-help"><span aria-hidden="true">♧</span> A few honest words are enough.</p>
+            {error && <p id="home-thought-error" className="home-paper-error" role="alert">{error}</p>}
+          </section>
+
+          <div className="home-notes" aria-label="Sentence starters">
+            {SENTENCE_STARTERS.map((starter, index) => (
+              <button key={starter} type="button" onClick={() => insertStarter(starter)} className={`home-note home-note-${index + 1}`}>{starter}</button>
+            ))}
           </div>
-
-          <div className="opening-meta">
-            <p className="opening-help" id="opening-help">One to three sentences is plenty. <span className="opening-help-quiet">Share only what you want to.</span></p>
-            {thought.length > 0 && (
-              <span className={`opening-count${nearLimit ? " is-near" : ""}`} aria-live="polite">
-                {thought.length.toLocaleString()} / {MAX_THOUGHT_LENGTH.toLocaleString()}
-              </span>
-            )}
-          </div>
-
-          {error && <p id="opening-error" className="opening-error" role="alert">{error}</p>}
-
-          {!thought && <div className="opening-starters">
-            <span>Not sure where to start?</span>
-            <div>{SENTENCE_STARTERS.map((starter) => <button key={starter} type="button" className="opening-chip" onClick={() => insertStarter(starter)}>{starter}</button>)}</div>
-          </div>}
-
-          <button type="submit" className="opening-primary">Turn this into lyrics <span aria-hidden="true">→</span></button>
-          <button type="button" className="opening-reset" onClick={resetEverything} title="Clears your thought and everything carried over from your last song — feelings, personal details, and settings.">
-            ↺ Start completely fresh
-          </button>
+          <button type="submit" className="home-submit">Shape this into lyrics <span aria-hidden="true">→</span></button>
         </form>
 
-        <div className="opening-paths" role="group" aria-label="Ways to begin">
-          <button type="button" className="opening-path is-current" onClick={() => textareaRef.current?.focus()}>
-            <span className="opening-path-title">Write freely</span>
-            <span className="opening-path-note">Begin from your own words</span>
-          </button>
-          <button type="button" className="opening-path" onClick={() => router.push("/create/start")}>
-            <span className="opening-path-title">Browse templates</span>
-            <span className="opening-path-note">Start from a prompt we wrote</span>
-          </button>
-        </div>
+        <section className="home-templates" aria-labelledby="home-templates-title">
+          <h2 id="home-templates-title"><span aria-hidden="true">❧</span> Starter templates <span aria-hidden="true">❧</span></h2>
+          <div className="home-template-list">
+            {HOME_TEMPLATES.map((template) => (
+              <button key={template.id} type="button" onClick={() => startFromTemplate(template.id)} className="home-template-row">
+                <span className="home-template-icon"><TemplateIcon name={template.icon} /></span>
+                <span className="home-template-copy"><strong>{template.title}</strong><small>{template.note}</small></span>
+                <span className="home-template-arrow" aria-hidden="true">›</span>
+              </button>
+            ))}
+          </div>
+          <Link href="/create/start" className="home-browse-link">Browse all templates</Link>
+        </section>
       </div>
-    </section>
+
+      <nav className="home-bottom-nav" aria-label="Primary navigation">
+        <Link href="/" className="is-current" aria-current="page"><span aria-hidden="true">✎</span><small>Write</small></Link>
+        <Link href="/songs"><span aria-hidden="true">♫</span><small>My Songs</small></Link>
+        <Link href={clerkEnabled ? "/sign-in" : "/plans"}><span aria-hidden="true">♙</span><small>You</small></Link>
+      </nav>
+    </main>
   );
 }

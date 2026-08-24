@@ -11,10 +11,10 @@ describe("thought entry state model", () => {
     expect(source("app/globals.css")).toContain('url("/images/home-twilight.png")');
   });
 
-  it("uses five fragments that only appear for an empty thought", () => {
-    expect(SENTENCE_STARTERS).toHaveLength(5);
+  it("uses three tactile note-card starters on the journal home", () => {
+    expect(SENTENCE_STARTERS).toHaveLength(3);
     expect(SENTENCE_STARTERS.every((starter) => starter.endsWith("…"))).toBe(true);
-    expect(source("components/HomeEntry.tsx")).toContain("{!thought &&");
+    expect(source("components/HomeEntry.tsx")).toContain('className="home-notes"');
   });
 
   it("uses a single expiring creation draft and no temporary thought record", () => {

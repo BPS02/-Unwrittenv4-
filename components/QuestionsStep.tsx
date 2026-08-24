@@ -22,47 +22,6 @@ interface QuestionsStepProps {
   onContinueWithout: () => void;
 }
 
-function QuestionField(props: {
-  index: number;
-  question: SongQuestion;
-  value: string;
-  invalid: boolean;
-  onChange: (value: string) => void;
-}) {
-  const id = useId();
-  const errorId = `${id}-error`;
-  const { index, question, value, invalid, onChange } = props;
-  return (
-    <div className="field question-field question-focus-field">
-      <div className="question-focus-prompt">
-        <span className="question-number" aria-hidden="true">
-          {String(index + 1).padStart(2, "0")}
-        </span>
-        <div>
-          <label className="field-label" htmlFor={id}>{question.question}</label>
-          <p className="field-hint">{question.hint || "One or two sentences is plenty."}</p>
-        </div>
-      </div>
-      <textarea
-        id={id}
-        className={`question-answer${invalid ? " invalid" : ""}`}
-        value={value}
-        maxLength={MAX_ANSWER_LENGTH}
-        rows={5}
-        aria-invalid={invalid || undefined}
-        aria-describedby={invalid ? errorId : undefined}
-        placeholder="Write what you remember…"
-        onChange={(e) => onChange(e.target.value)}
-      />
-      {invalid && (
-        <p className="field-error" id={errorId}>
-          This one’s still blank.
-        </p>
-      )}
-    </div>
-  );
-}
-
 /**
  * The follow-up questions step.
  *
@@ -85,6 +44,8 @@ export default function QuestionsStep(props: QuestionsStepProps) {
     onContinueWithout,
   } = props;
   const [currentIndex, setCurrentIndex] = useState(0);
+  const answerId = useId();
+  const errorId = `${answerId}-error`;
 
   useEffect(() => {
     setCurrentIndex((index) => Math.min(index, Math.max(questions.length - 1, 0)));
@@ -171,60 +132,63 @@ export default function QuestionsStep(props: QuestionsStepProps) {
     else setCurrentIndex((index) => index + 1);
   }
 
-  const starters = ["I remember…", "It felt like…", "The detail that stands out…"];
+  function handleSkip() {
+    if (isLastQuestion) onContinue();
+    else setCurrentIndex((index) => index + 1);
+  }
+
+  const starters = ["The last time we talked", "A place I remember", "Something I never said"];
 
   return (
-    <div className="step-panel questions-focus">
-      <div className="questions-focus-heading">
-        <h1>Bring the memory<br />into focus</h1>
-        <span className="questions-heading-flourish" aria-hidden="true">✦</span>
-        <p>Small details make the lyrics feel like yours.</p>
-      </div>
-
-      <div className="questions-focus-progress" aria-live="polite">
-        <p>Question {currentIndex + 1} of {questions.length}</p>
-        <div className="questions-progress-track" aria-hidden="true">
-          <span style={{ width: `${progress}%` }} />
+    <div className="step-panel memory-question-screen">
+      <section className="memory-question-hero">
+        <div className="memory-question-topbar">
+          <button type="button" className="memory-back" onClick={handleBack} aria-label="Go back">←</button>
+          <span>Unwritten</span>
+          <i aria-hidden="true" />
         </div>
-      </div>
 
-      <div className="question-focus-card">
-        <QuestionField
-          key={currentQuestion.id}
-          index={currentIndex}
-          question={currentQuestion}
+        <ol className="memory-progress-dots" aria-label={`Question ${currentIndex + 1} of ${questions.length}`}>
+          {questions.map((question, index) => (
+            <li key={question.id} className={index === currentIndex ? "is-current" : index < currentIndex ? "is-done" : undefined} />
+          ))}
+        </ol>
+
+        <div className="memory-question-copy">
+          <p>MEMORY {String(currentIndex + 1).padStart(2, "0")}</p>
+          <h1>{currentQuestion.question}</h1>
+          <span>{currentQuestion.hint || "Begin wherever the picture becomes clear."}</span>
+        </div>
+      </section>
+
+      <section className="memory-answer-sheet">
+        <span className="memory-sheet-notch" style={{ left: `${Math.max(8, Math.min(92, progress))}%` }} aria-hidden="true" />
+        <div className="memory-answer-heading"><span aria-hidden="true">✎</span> Answer in your own words</div>
+        <label className="sr-only" htmlFor={answerId}>Your answer</label>
+        <textarea
+          id={answerId}
           value={currentAnswer}
-          invalid={missing.includes(currentQuestion.id)}
-          onChange={(value) => onAnswerChange(currentQuestion.id, value)}
+          maxLength={MAX_ANSWER_LENGTH}
+          rows={4}
+          aria-invalid={missing.includes(currentQuestion.id) || undefined}
+          aria-describedby={missing.includes(currentQuestion.id) ? errorId : undefined}
+          placeholder="I remember…"
+          onChange={(event) => onAnswerChange(currentQuestion.id, event.target.value)}
         />
-        <div className="question-starters" aria-label="Answer starters">
+        {missing.includes(currentQuestion.id) && <p className="memory-answer-error" id={errorId}>Add a few words before finishing your lyrics.</p>}
+
+        <div className="memory-answer-starters" aria-label="Answer starters">
           {starters.map((starter) => (
-            <button
-              key={starter}
-              type="button"
-              onClick={() => onAnswerChange(currentQuestion.id, currentAnswer ? `${currentAnswer} ${starter}` : starter)}
-            >
-              {starter}
-            </button>
+            <button key={starter} type="button" onClick={() => onAnswerChange(currentQuestion.id, currentAnswer ? `${currentAnswer} ${starter}` : `${starter}…`)}>{starter}</button>
           ))}
         </div>
-      </div>
+        <p className="memory-starter-hint">Tap a line to start your answer</p>
 
-      <div className="flow-nav questions-focus-nav">
-        <button type="button" className="btn btn-secondary" onClick={handleBack}>
-          ← Back
+        <button type="button" className="memory-continue" disabled={!currentAnswered} onClick={handleNext}>
+          {isLastQuestion ? "Continue to lyrics" : "Continue"}
         </button>
-        <button
-          type="button"
-          className="btn btn-primary btn-lg"
-          disabled={!currentAnswered}
-          onClick={handleNext}
-        >
-          {isLastQuestion ? "Write my lyrics" : "Next question"} →
-        </button>
-      </div>
-
-      <p className="questions-saved"><span aria-hidden="true">✓</span> Saved on this device</p>
+        <button type="button" className="memory-skip" onClick={handleSkip}>Skip for now — you can return later</button>
+      </section>
     </div>
   );
 }

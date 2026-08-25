@@ -111,6 +111,7 @@ export default function PlaylistsView() {
   const [collectionSort, setCollectionSort] = useState<"newest" | "oldest" | "alpha">("newest");
   const [moodFilter, setMoodFilter] = useState("all");
   const [styleFilter, setStyleFilter] = useState("all");
+  const [openingSongId, setOpeningSongId] = useState<string | null>(null);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -136,6 +137,21 @@ export default function PlaylistsView() {
     setPlayDuration(0);
     setIsPlaying(true);
   }, [activeSongId, showToast]);
+
+  const openSongRoom = useCallback(async (song: SavedSongWire) => {
+    if (openingSongId) return;
+    setOpeningSongId(song.id);
+    const source = song.coverArt ?? "/images/collection-hurt.jpg";
+    try {
+      const image = new Image();
+      image.src = source;
+      await image.decode();
+    } catch {
+      // The room still has fallback art if a remote cover cannot decode.
+    }
+    setView({ kind: "song", id: song.id });
+    setOpeningSongId(null);
+  }, [openingSongId]);
 
   useEffect(() => {
     if (!activeSongId || !playerRef.current) return;
@@ -433,7 +449,7 @@ export default function PlaylistsView() {
       <section className="song-room">
         <button type="button" className="song-room-back" onClick={() => setView({ kind: "grid" })}>← Back to My Songs</button>
         <div className="song-room-stage">
-          <img src={song.coverArt ?? "/images/collection-hurt.jpg"} alt={song.coverArt ? `Album cover for ${song.title}` : "Rain on a car window at night"} />
+          <img src={song.coverArt ?? "/images/collection-hurt.jpg"} alt={song.coverArt ? `Album cover for ${song.title}` : "Rain on a car window at night"} loading="eager" fetchPriority="high" />
           <div className="song-room-copy">
             <p>Now listening</p>
             <h1>{song.title}</h1>
@@ -543,7 +559,7 @@ export default function PlaylistsView() {
                       <span><strong>{song.title}</strong><small>{songDescriptor(song)} <i>•</i> {song.unlocked ? "Full song" : "Preview"}</small></span>
                     </button>
                     <button type="button" className={song.favorite ? "is-liked" : ""} aria-label={song.favorite ? `Unlike ${song.title}` : `Like ${song.title}`} onClick={() => void toggleFavorite(song)}>{song.favorite ? "♥" : "♡"}</button>
-                    <button type="button" aria-label={`More actions for ${song.title}`} onClick={() => setView({ kind: "song", id: song.id })}>•••</button>
+                    <button type="button" aria-label={`More actions for ${song.title}`} onClick={() => void openSongRoom(song)}>•••</button>
                   </li>
                 ))}
               </ol>
@@ -723,10 +739,10 @@ export default function PlaylistsView() {
       </div>
 
       {recentSong && (
-        <button type="button" className="continue-song" onClick={() => setView({ kind: "song", id: recentSong.id })}>
-          <img src={recentSong.coverArt ?? "/images/collection-hurt.jpg"} alt={recentSong.coverArt ? `Album cover for ${recentSong.title}` : ""} />
+        <button type="button" className="continue-song" disabled={openingSongId === recentSong.id} aria-busy={openingSongId === recentSong.id} onClick={() => void openSongRoom(recentSong)}>
+          <img src={recentSong.coverArt ?? "/images/collection-hurt.jpg"} alt={recentSong.coverArt ? `Album cover for ${recentSong.title}` : ""} loading="eager" fetchPriority="high" />
           <span className="continue-copy">
-            <small>Continue where you left off</small>
+            <small>{openingSongId === recentSong.id ? "Opening your song" : "Continue where you left off"}</small>
             <strong>{recentSong.title}</strong>
             <em>{recentSong.provider} · Saved recently</em>
             <i aria-hidden="true">▶</i>

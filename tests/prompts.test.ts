@@ -203,4 +203,11 @@ describe("genre generator prompts", () => {
     expect(direction).toContain("internal rhymes plus strong end rhymes");
     expect(direction).toContain("Never distort grammar");
   });
+
+  it("keeps AI music tags and production metadata out of country lyrics", () => {
+    const direction = GENRE_DIRECTIONS.Country;
+    expect(direction).toContain("Keep AI music metadata out of the lyrics");
+    expect(direction).toContain("only bracketed labels allowed");
+    expect(direction).toContain("production language exclusively in the STYLE line");
+  });
 });

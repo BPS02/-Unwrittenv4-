@@ -43,6 +43,8 @@ export const GENRE_DIRECTIONS: Record<Genre, string> = {
 - Tell a clear story through places, objects, actions, and spoken-language phrasing grounded in the writer's details.
 - Use accessible rhyme and a chorus whose central phrase feels earned by the verses.
 - Avoid stock trucks, whiskey, small towns, porches, and dirt roads unless the writer actually supplied them.
+- Keep AI music metadata out of the lyrics. The only bracketed labels allowed are [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], and [Final Chorus]. Do not emit tags or directions such as [Guitar Solo], [Instrumental], [Backing vocals], [Build], [Drop], vocal cues, performance notes, production notes, or parenthetical stage directions.
+- Keep all instrumentation, arrangement, vocal, tempo, and production language exclusively in the STYLE line, never in the LYRICS block.
 - STYLE should specify country lane, BPM, acoustic/electric instrumentation, vocal character, and narrative dynamic arc.`,
   "Hip-Hop": `HIP-HOP-SPECIFIC DIRECTION:
 - Every lyrical bar must participate in an audible rhyme scheme. Do not leave unrhymed filler lines.

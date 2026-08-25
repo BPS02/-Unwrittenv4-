@@ -30,6 +30,27 @@ beforeEach(async () => {
 });
 
 describe("in-flight holds count against the gate", () => {
+  it("allows concurrent unlimited holds and commits without spending credits", async () => {
+    service.seedEntitlementForTesting("user_unlimited", {
+      unlimited: true,
+      freeSongUsed: true,
+      songsRemaining: 0,
+      purchasedCredits: 0,
+    });
+
+    const first = await service.reserveMusicGeneration("user_unlimited", "song-a");
+    const second = await service.reserveMusicGeneration("user_unlimited", "song-b");
+    expect(first.assessment.allowed).toBe(true);
+    expect(second.assessment.allowed).toBe(true);
+
+    await service.recordMusicGeneration("user_unlimited", "song-a", first.reservationId as string);
+    await service.recordMusicGeneration("user_unlimited", "song-b", second.reservationId as string);
+    const meta = await service.getEntitlement("user_unlimited");
+    expect(meta.unlimited).toBe(true);
+    expect(meta.songsRemaining).toBe(0);
+    expect(meta.purchasedCredits).toBe(0);
+  });
+
   it("refuses a second concurrent free render before the first commits", async () => {
     const held: string[] = [];
     for (let i = 0; i < 1; i++) {

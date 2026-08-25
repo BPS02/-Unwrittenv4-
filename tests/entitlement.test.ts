@@ -22,6 +22,24 @@ function fresh(): EntitlementMetadata {
   return defaultMetadata(NOW);
 }
 
+describe("unlimited administrative grant", () => {
+  it("allows full-quality generations and master access without consuming credits", () => {
+    const meta = { ...fresh(), unlimited: true };
+    const assessment = assessGeneration(meta, "song-any");
+
+    expect(assessment).toEqual({
+      allowed: true,
+      quality: "full",
+      consumesProSong: false,
+      claimsFreeSong: false,
+      consumesFreeTake: false,
+      consumesPurchasedCredit: false,
+    });
+    expect(recordGeneration(meta, "song-any", NOW)).toEqual(meta);
+    expect(masterAccessAllowed(meta, "song-any")).toBe(true);
+  });
+});
+
 describe("lifetime free song", () => {
   it("a fresh account may generate exactly one song, preview quality", () => {
     expect(assessGeneration(fresh(), "song-a")).toEqual({
@@ -213,6 +231,7 @@ describe("client-safe summary", () => {
       "purchasedCredits",
       "songsRemaining",
       "tier",
+      "unlimited",
     ]);
     expect(summary.tier).toBe("free");
     expect(summary.songsRemaining).toBe(0);

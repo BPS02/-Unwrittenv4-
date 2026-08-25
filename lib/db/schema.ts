@@ -42,6 +42,8 @@ export const entitlements = pgTable("entitlements", {
   tier: text("tier", { enum: ["free", "pro"] })
     .notNull()
     .default("free"),
+  /** Administrative grant for unlimited full-quality renders. */
+  unlimited: boolean("unlimited").notNull().default(false),
   /** Lifetime free song: whether it has been claimed, and by which song. */
   freeSongUsed: boolean("free_song_used").notNull().default(false),
   freeSongId: text("free_song_id"),
@@ -77,7 +79,7 @@ export const renderReservations = pgTable(
     userId: text("user_id").notNull(),
     songId: text("song_id").notNull(),
     /** What this hold consumes if it commits. */
-    kind: text("kind", { enum: ["free_take", "pro_song", "purchased_credit"] }).notNull(),
+    kind: text("kind", { enum: ["free_take", "pro_song", "purchased_credit", "unlimited"] }).notNull(),
     status: text("status", { enum: ["reserved", "committed", "released"] })
       .notNull()
       .default("reserved"),

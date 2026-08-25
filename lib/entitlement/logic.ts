@@ -35,6 +35,7 @@ export function normalizeMetadata(raw: unknown, now: Date = new Date()): Entitle
   const m = raw as Partial<Record<keyof EntitlementMetadata, unknown>>;
   const meta: EntitlementMetadata = {
     tier: m.tier === "pro" ? "pro" : "free",
+    unlimited: m.unlimited === true,
     freeSongUsed: m.freeSongUsed === true,
     freeSongId: typeof m.freeSongId === "string" ? m.freeSongId : null,
     freeTakesUsed:
@@ -85,6 +86,16 @@ export function isUnlocked(meta: EntitlementMetadata, songId: string): boolean {
  * the provider confirms a successful render.
  */
 export function assessGeneration(meta: EntitlementMetadata, songId: string): GenerationAssessment {
+  if (meta.unlimited) {
+    return {
+      allowed: true,
+      quality: "full",
+      consumesProSong: false,
+      claimsFreeSong: false,
+      consumesFreeTake: false,
+      consumesPurchasedCredit: false,
+    };
+  }
   // Monthly and purchased render credits use the same durable counter. An
   // unlocked song owns its existing masters; it does not grant free rerenders.
   if (meta.tier === "pro" && meta.songsRemaining > 0) {
@@ -141,7 +152,7 @@ export function freeTakesRemaining(meta: EntitlementMetadata): number {
 
 /** Whether this song's full master (and download) may be served to the owner. */
 export function masterAccessAllowed(meta: EntitlementMetadata, songId: string): boolean {
-  return isUnlocked(meta, songId);
+  return meta.unlimited || isUnlocked(meta, songId);
 }
 
 /**
@@ -178,6 +189,7 @@ export function recordGeneration(
 export function summarize(meta: EntitlementMetadata): EntitlementSummary {
   return {
     tier: meta.tier,
+    unlimited: meta.unlimited,
     songsRemaining: meta.tier === "pro" ? meta.songsRemaining : 0,
     purchasedCredits: meta.purchasedCredits,
     freeSongAvailable: !meta.freeSongUsed,

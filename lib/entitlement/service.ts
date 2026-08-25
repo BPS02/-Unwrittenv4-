@@ -46,7 +46,7 @@ interface MemoryReservation {
   id: string;
   userId: string;
   songId: string;
-  kind: "free_take" | "pro_song" | "purchased_credit";
+  kind: "free_take" | "pro_song" | "purchased_credit" | "unlimited";
   status: "reserved" | "committed" | "released";
   claimsFreeSong: boolean;
   expiresAt: number;
@@ -130,10 +130,11 @@ function withHolds(
   };
 }
 
-function kindOf(assessment: Extract<GenerationAssessment, { allowed: true }>): "free_take" | "pro_song" | "purchased_credit" {
+function kindOf(assessment: Extract<GenerationAssessment, { allowed: true }>): "free_take" | "pro_song" | "purchased_credit" | "unlimited" {
   if (assessment.consumesFreeTake) return "free_take";
   if (assessment.consumesProSong) return "pro_song";
-  return "purchased_credit";
+  if (assessment.consumesPurchasedCredit) return "purchased_credit";
+  return "unlimited";
 }
 
 /* ------------------------------------------------------------------ */
@@ -179,6 +180,7 @@ function rowToMeta(
   return normalizeMetadata(
     {
       tier: row.tier,
+      unlimited: row.unlimited,
       freeSongUsed: row.freeSongUsed,
       freeSongId: row.freeSongId,
       freeTakesUsed: row.freeTakesUsed,

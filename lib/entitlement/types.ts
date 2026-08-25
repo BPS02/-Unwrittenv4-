@@ -18,6 +18,8 @@ export type Tier = "free" | "pro";
 /** Shape persisted in Clerk privateMetadata. */
 export interface EntitlementMetadata {
   tier: Tier;
+  /** Administrative grant: unlimited full-quality generations with no credit consumption. */
+  unlimited: boolean;
   /** Lifetime free song: has it been generated, and which songId claimed it. */
   freeSongUsed: boolean;
   freeSongId: string | null;
@@ -51,6 +53,7 @@ export const MAX_TRACKED_EVENTS = 20;
 export function defaultMetadata(now: Date = new Date()): EntitlementMetadata {
   return {
     tier: "free",
+    unlimited: false,
     freeSongUsed: false,
     freeSongId: null,
     freeTakesUsed: 0,
@@ -71,6 +74,7 @@ export function addMonth(from: Date): Date {
 /** The only entitlement shape a client is ever allowed to see. */
 export interface EntitlementSummary {
   tier: Tier;
+  unlimited: boolean;
   /** Pro generations left this period (0 for free). */
   songsRemaining: number;
   purchasedCredits: number;

@@ -152,6 +152,7 @@ export type MusicResult =
 /** Client-safe entitlement summary attached to gated responses. */
 export interface EntitlementSummaryWire {
   tier: "free" | "pro";
+  unlimited: boolean;
   songsRemaining: number;
   purchasedCredits: number;
   freeSongAvailable: boolean;

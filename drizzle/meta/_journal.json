@@ -57,6 +57,13 @@
       "when": 1787615104876,
       "tag": "0007_peaceful_franklin_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787622883071,
+      "tag": "0008_icy_quasar",
+      "breakpoints": true
     }
   ]
 }

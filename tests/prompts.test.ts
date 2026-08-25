@@ -169,6 +169,9 @@ describe("GENERATOR_SYSTEM_PROMPT", () => {
     expect(GENERATOR_SYSTEM_PROMPT).toContain("place them side by side");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("one immediately understandable central phrase");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("bridge offers a new realization or turn");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("both [Verse 1] and [Verse 2]");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("Never stop after Verse 1");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("Verse 2 must advance the story");
   });
 });
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useClerk, useUser } from "@clerk/nextjs";
 import PixelField from "./PixelField";
 import { DRAFT_KEY, packExpiring, unpackExpiring } from "@/lib/draft-storage";
 import { getTemplate } from "@/lib/templates";
@@ -35,6 +36,26 @@ function TemplateIcon({ name }: { name: (typeof HOME_TEMPLATES)[number]["icon"] 
     return <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="13" cy="13" r="5" /><path d="M13 3v4M13 19v4M3 13h4M19 13h4M5.8 5.8l3 3M17.2 17.2l3 3M20.2 5.8l-3 3M4 40c7-8 13-8 20-4 7 4 12 2 20-6M4 32c8-5 14-5 21-1M26 26c6 2 11 1 18-4" /></svg>;
   }
   return <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M9 5h29l3 34H12z" /><path d="M14 10h19v20H14z" /><circle cx="24" cy="17" r="4" /><path d="M16 28c3-5 7-7 10-5 3 2 5 2 7 0" /></svg>;
+}
+
+function YouAccountButton() {
+  const { openUserProfile } = useClerk();
+  const { isLoaded, isSignedIn } = useUser();
+
+  const openAccount = () => {
+    if (!isLoaded) return;
+    if (isSignedIn) {
+      openUserProfile();
+    } else {
+      window.location.assign("/sign-in");
+    }
+  };
+
+  return (
+    <button type="button" onClick={openAccount} aria-label={isSignedIn ? "Open account settings" : "Sign in"}>
+      <span aria-hidden="true">♙</span><small>You</small>
+    </button>
+  );
 }
 
 export default function HomeEntry({ clerkEnabled = true }: { clerkEnabled?: boolean }) {
@@ -150,7 +171,9 @@ export default function HomeEntry({ clerkEnabled = true }: { clerkEnabled?: bool
       <nav className="home-bottom-nav" aria-label="Primary navigation">
         <Link href="/" className="is-current" aria-current="page"><span aria-hidden="true">✎</span><small>Write</small></Link>
         <Link href="/songs"><span aria-hidden="true">♫</span><small>My Songs</small></Link>
-        <Link href={clerkEnabled ? "/sign-in" : "/plans"}><span aria-hidden="true">♙</span><small>You</small></Link>
+        {clerkEnabled
+          ? <YouAccountButton />
+          : <Link href="/plans"><span aria-hidden="true">♙</span><small>You</small></Link>}
       </nav>
     </main>
   );

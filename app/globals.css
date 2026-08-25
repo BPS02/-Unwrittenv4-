@@ -3700,8 +3700,8 @@ body:has(.home-journal) .site-footer {
   backdrop-filter: blur(14px);
 }
 
-.home-bottom-nav a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.18rem; color: rgb(213 210 187 / 0.66); text-decoration: none; }
-.home-bottom-nav a > span { font-family: Georgia, serif; font-size: 1.75rem; line-height: 1; }
+.home-bottom-nav a,.home-bottom-nav button { display: flex; padding:0; border:0; flex-direction: column; align-items: center; justify-content: center; gap: 0.18rem; color: rgb(213 210 187 / 0.66); background:transparent; font:inherit; text-decoration: none; cursor:pointer; }
+.home-bottom-nav a > span,.home-bottom-nav button > span { font-family: Georgia, serif; font-size: 1.75rem; line-height: 1; }
 .home-bottom-nav small { font-size: 0.72rem; }
 .home-bottom-nav a.is-current { color: #e8b24b; }
 

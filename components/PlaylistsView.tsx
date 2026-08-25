@@ -6,22 +6,9 @@ import { artFor } from "@/lib/cover-art";
 import { lyricsForReading } from "@/lib/lyrics-display";
 import AudioPlayer from "./AudioPlayer";
 import TrackList from "./TrackList";
+import type { SavedSongWire } from "@/lib/songs-wire";
 
-export interface SavedSongWire {
-  id: string;
-  title: string;
-  lyrics: string;
-  stylePrompt: string;
-  coverArt?: string | null;
-  provider: string;
-  createdAt: string;
-  unlocked: boolean;
-  downloadable: boolean;
-  favorite: boolean;
-  sizeBytes: number | null;
-  mimeType: string;
-  streamPath: string | null;
-}
+export type { SavedSongWire } from "@/lib/songs-wire";
 
 interface PlaylistWire {
   id: string;
@@ -86,10 +73,10 @@ function CollageArt({ songIds, glyph }: { songIds: string[]; glyph?: string }) {
   );
 }
 
-export default function PlaylistsView() {
+export default function PlaylistsView({ initialSongs = [] }: { initialSongs?: SavedSongWire[] }) {
   // Render the library shell immediately; saved data hydrates into it without
   // replacing the whole page with an "Opening your vault" interstitial.
-  const [songs, setSongs] = useState<SavedSongWire[]>([]);
+  const [songs, setSongs] = useState<SavedSongWire[]>(initialSongs);
   const [playlists, setPlaylists] = useState<PlaylistWire[]>([]);
   const [detailSongIds, setDetailSongIds] = useState<Record<string, string[]>>({});
   const [error, setError] = useState<string | null>(null);

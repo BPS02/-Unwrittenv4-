@@ -18,9 +18,9 @@ import AudioPlayer from "./AudioPlayer";
  * real status from the job record instead.
  */
 const STAGES = [
-  { id: "queued", label: "Queued", note: "Your song is in line." },
-  { id: "composing", label: "Composing", note: "Building the arrangement from your lyrics." },
-  { id: "rendering", label: "Rendering", note: "Finishing the audio." },
+  { id: "story", label: "Story", note: "Holding onto the details you shared." },
+  { id: "voice", label: "Voice", note: "Finding the voice that fits your words." },
+  { id: "arrangement", label: "Arrangement", note: "Bringing the instruments and feeling together." },
 ] as const;
 
 /** Roughly when each stage begins, in ms. Live renders take 60–90s. */
@@ -165,7 +165,44 @@ export default function MusicStep(props: MusicStepProps) {
     ["Language", props.controls.keepClean ? "Clean" : "Explicit allowed"],
   ];
 
-  const preGenerate = props.status === "loading";
+  if (props.status === "loading") {
+    return (
+      <div className="studio-loading-screen" role="status" aria-live="polite">
+        <header className="studio-loading-topbar">
+          <span>Unwritten</span>
+          <ol aria-label="Song progress">
+            {STAGES.map((item, index) => (
+              <li key={item.id} className={index < stage ? "is-done" : index === stage ? "is-current" : undefined}>
+                <i aria-hidden="true">{index < stage ? "✓" : ""}</i>{item.label}
+              </li>
+            ))}
+          </ol>
+        </header>
+
+        <main className="studio-loading-content">
+          <h1>We’re making room<br />for your song.</h1>
+          <p>Your words are with us.</p>
+
+          <div className="studio-board" aria-hidden="true">
+            <div className="studio-reel"><span /><span /><span /></div>
+            <div className="studio-meter"><span>VU</span><i /></div>
+            {STAGES.map((item, index) => (
+              <article key={item.id} className={`studio-note studio-note-${index + 1} ${index < stage ? "is-done" : index === stage ? "is-current" : ""}`}>
+                <b>{item.label}</b>
+                <div className="studio-hand-lines"><i /><i /><i /><i /></div>
+                {index < stage && <em>✓</em>}
+              </article>
+            ))}
+            <div className="studio-wave"><i /><i /><i /><i /><i /><i /><i /></div>
+            <div className="studio-chords">Am9&nbsp;&nbsp; | &nbsp;&nbsp;C&nbsp;&nbsp; | &nbsp;&nbsp;G / B&nbsp;&nbsp; | &nbsp;&nbsp;Dsus2</div>
+          </div>
+
+          <p className="studio-stage-note">{STAGES[stage]?.note}</p>
+          <p className="studio-ready-note">Almost ready to press play.</p>
+        </main>
+      </div>
+    );
+  }
 
   if (props.status === "idle") {
     return (
@@ -241,26 +278,6 @@ export default function MusicStep(props: MusicStepProps) {
           ))}
         </dl>
       </section>
-
-      {props.status === "loading" && (
-        <section className="generate-card is-working" role="status" aria-live="polite">
-          <ol className="stage-track" aria-label="Progress">
-            {STAGES.map((s, i) => (
-              <li key={s.id} className={i < stage ? "is-done" : i === stage ? "is-current" : undefined}>
-                <span className="stage-dot" aria-hidden="true" />
-                <span className="stage-label">{s.label}</span>
-              </li>
-            ))}
-          </ol>
-          <div className="breath" aria-hidden="true">
-            <span /><span /><span /><span />
-          </div>
-          <p className="stage-note">{STAGES[stage]?.note}</p>
-          <p className="generate-timing">
-            {isDemo ? "Almost there." : "This usually takes about 60–90 seconds."}
-          </p>
-        </section>
-      )}
 
       {props.status === "error" && (
         <div className="banner banner-error" role="alert">
@@ -537,7 +554,7 @@ export default function MusicStep(props: MusicStepProps) {
           ← Back to lyrics
         </button>
         <span className="spacer" />
-        {!preGenerate && props.status !== "ready" && (
+        {props.status !== "ready" && (
           confirmingReset ? (
             <span className="action-row" role="group" aria-label="Confirm starting over">
               <span className="finish-confirm">Clear everything and start fresh?</span>

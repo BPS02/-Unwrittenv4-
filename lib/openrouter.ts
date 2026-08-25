@@ -61,28 +61,42 @@ export async function chatComplete(params: {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), params.timeoutMs ?? 60_000);
   try {
-    const res = await fetch(OPENROUTER_URL, {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "http://localhost:3000",
-        "X-Title": process.env.OPENROUTER_APP_NAME || "Unwritten",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: params.system },
-          { role: "user", content: params.user },
-        ],
-        temperature: params.temperature ?? 0.85,
-        max_tokens: params.maxTokens ?? 1500,
-        ...(params.reasoning === undefined
-          ? {}
-          : { reasoning: { enabled: params.reasoning } }),
-      }),
-    });
+    const request = async (reasoning: boolean | undefined) =>
+      fetch(OPENROUTER_URL, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "http://localhost:3000",
+          "X-Title": process.env.OPENROUTER_APP_NAME || "Unwritten",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: params.system },
+            { role: "user", content: params.user },
+          ],
+          temperature: params.temperature ?? 0.85,
+          max_tokens: params.maxTokens ?? 1500,
+          ...(reasoning === undefined ? {} : { reasoning: { enabled: reasoning } }),
+        }),
+      });
+
+    let res = await request(params.reasoning);
+    // Some OpenRouter models require reasoning and reject an explicit false.
+    // A stale managed-prompt config must not make the writing flow fail.
+    if (res.status === 400 && params.reasoning === false) {
+      const rejectedBody = await res.text().catch(() => "");
+      if (/reasoning is mandatory|cannot be disabled/i.test(rejectedBody)) {
+        res = await request(undefined);
+      } else {
+        throw new OpenRouterError(
+          `OpenRouter responded with ${res.status}${rejectedBody ? `: ${rejectedBody.slice(0, 300)}` : ""}`,
+          res.status
+        );
+      }
+    }
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       throw new OpenRouterError(

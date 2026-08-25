@@ -20,6 +20,13 @@ if (!process.env.LANGFUSE_PUBLIC_KEY || !process.env.LANGFUSE_SECRET_KEY) {
 const source = await fs.readFile(new URL("../lib/prompts.ts", import.meta.url), "utf8");
 const match = source.match(/export const GENERATOR_SYSTEM_PROMPT = `([\s\S]*?)`;\r?\n/);
 if (!match) throw new Error("Could not read GENERATOR_SYSTEM_PROMPT");
+const bannedTerms = JSON.parse(
+  await fs.readFile(new URL("../lib/banned-ai-lyric-terms.json", import.meta.url), "utf8")
+);
+const generatorSystemPrompt = match[1].replace(
+  '${bannedAiLyricTerms.join(", ")}',
+  bannedTerms.join(", ")
+);
 
 const client = new LangfuseClient({
   publicKey: process.env.LANGFUSE_PUBLIC_KEY,
@@ -38,7 +45,7 @@ for (const [slug, direction] of selected) {
   const created = await client.prompt.create({
     name: `${baseName}-${slug}`,
     type: "chat",
-    prompt: [{ role: "system", content: `${match[1]}\n\n${direction}` }],
+    prompt: [{ role: "system", content: `${generatorSystemPrompt}\n\n${direction}` }],
     labels: ["production"],
     config: {
       model: "meta/muse-spark-1.2-contributor",

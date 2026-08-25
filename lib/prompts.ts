@@ -1,5 +1,6 @@
 ﻿import { MAX_QUESTIONS, MIN_QUESTIONS, type SongQuestion } from "./types";
 import type { LyricsRequestParsed, QuestionsRequestParsed } from "./validation";
+import bannedAiLyricTerms from "./banned-ai-lyric-terms.json";
 
 /**
  * Local prompt templates. When Langfuse is configured, the server first tries
@@ -27,7 +28,7 @@ Principles:
 - Be emotionally honest without being melodramatic. Never diagnose, never give therapeutic advice — this is creative expression, not treatment.
 - If feelings were not described, infer a gentle emotional tone from the story itself; do not invent feelings the writer did not express.
 - Follow the requested genre, mood, perspective, lyrical style, structure, and lead voice precisely.
-- Write in clear, plainspoken language that sounds natural when sung. Prefer short lines, usually 2–8 words, with occasional longer lines only for contrast.
+- Write in clear, plainspoken language that sounds natural when sung. Vary line length intentionally from 1–12 words and vary syllable count to create a human musical cadence, while keeping most lines short.
 - Build each verse from small concrete moments, physical details, and simple images. Let those details reveal the feeling instead of explaining it abstractly.
 - When the story holds two emotions at once, place them side by side through clean contrasts and paired images.
 - Give the chorus one immediately understandable central phrase. Repeat it deliberately so it feels memorable, while changing nearby lines enough to deepen its meaning.
@@ -37,6 +38,10 @@ Principles:
 - Include a [Pre-Chorus] after Verse 1 and another [Pre-Chorus] after Verse 2. Each pre-chorus should be 2–6 lines, build emotional or musical tension, and lead naturally into the chorus; the second may repeat or meaningfully vary the first.
 - Every song must end with a labeled [Final Chorus]. The final chorus should return to the central hook with a small lyrical or emotional lift. Do not place an outro, spoken line, note, explanation, or any other lyrics after the Final Chorus.
 - Keep the full lyric focused and uncluttered. Do not stack ornate metaphors, use vague poetic filler, or imitate wording from examples; write an original song from this writer's details.
+- Keep the complete LYRICS block under 2,000 characters but as close to that limit as the story naturally supports.
+- Repetition is deliberate: repeat the hook and chorus by design, but outside repeated sections do not recycle a distinctive word, image, or phrase. Never repeat a word back-to-back or stutter/loop a phrase.
+- For genres whose specific prompt permits production tags, use varied Suno-style tags strategically for real musical changes such as a beat switch, breakdown, instrumental change, backing vocals, or delivery change. Tags must be useful, never decorative. A genre-specific restriction overrides this rule; Country permits only its approved structural labels.
+- BANNED AI-SOUNDING WORDS AND PHRASES (case-insensitive): ${bannedAiLyricTerms.join(", ")}. Do not use any listed term unless it is a literal, essential proper noun supplied by the writer; when in doubt, replace it with a concrete detail from their story.
 - The lead-voice direction is a production requirement for the STYLE line: when Female voice or Male voice is requested, state it clearly in STYLE; when the writer says Choose for me, choose the voice that best fits the story and state that choice clearly. Do not mention this choice inside the lyrics.
 - Use section labels in square brackets: [Verse 1], [Chorus], [Bridge], etc.
 - Keep imagery concrete and singable; avoid cliché where a specific detail from the brief can serve instead.

@@ -10,6 +10,7 @@ import {
   genreGeneratorPromptName,
 } from "@/lib/genre-prompts";
 import { GENRES } from "@/lib/types";
+import bannedAiLyricTerms from "@/lib/banned-ai-lyric-terms.json";
 import { resolveStylePrompt } from "@/lib/generate";
 import { lyricsRequestSchema } from "@/lib/validation";
 import { DEFAULT_CONTROLS } from "@/lib/types";
@@ -164,7 +165,7 @@ describe("GENERATOR_SYSTEM_PROMPT", () => {
   });
 
   it("uses the short, plainspoken, emotionally contrasting lyric standard", () => {
-    expect(GENERATOR_SYSTEM_PROMPT).toContain("Prefer short lines, usually 2–8 words");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("Vary line length intentionally from 1–12 words");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("small concrete moments");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("place them side by side");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("one immediately understandable central phrase");
@@ -178,6 +179,10 @@ describe("GENERATOR_SYSTEM_PROMPT", () => {
     expect(GENERATOR_SYSTEM_PROMPT).toContain("[Pre-Chorus] after Verse 2");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("end with a labeled [Final Chorus]");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("after the Final Chorus");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("under 2,000 characters");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("Never repeat a word back-to-back");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("BANNED AI-SOUNDING WORDS AND PHRASES");
+    for (const term of bannedAiLyricTerms) expect(GENERATOR_SYSTEM_PROMPT).toContain(term);
   });
 });
 

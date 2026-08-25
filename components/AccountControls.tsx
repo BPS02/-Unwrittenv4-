@@ -30,6 +30,7 @@ export default function AccountControls({ enabled, compact = false }: { enabled:
       </Show>
       <Show when="signed-in">
         <Link className="account-link" href="/songs">My Songs</Link>
+        <Link className="account-link" href="/profile">You</Link>
         <Link className="account-link account-link-mcp" href="/connect" title="Use Unwritten inside Claude">
           <span aria-hidden="true">🔌</span> Connect
         </Link>

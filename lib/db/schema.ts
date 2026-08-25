@@ -59,6 +59,32 @@ export const entitlements = pgTable("entitlements", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** Per-account control for the private personal-detail memory. */
+export const storyProfiles = pgTable("story_profiles", {
+  userId: text("user_id").primaryKey(),
+  memoryEnabled: boolean("memory_enabled").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Individual details the writer can review, edit, or remove from their profile. */
+export const storyMemories = pgTable(
+  "story_memories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(),
+    detail: text("detail").notNull(),
+    fingerprint: text("fingerprint").notNull(),
+    source: text("source", { enum: ["song", "profile"] }).notNull().default("profile"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("story_memories_user_fingerprint_unique").on(t.userId, t.fingerprint),
+    index("story_memories_user_updated_idx").on(t.userId, t.updatedAt),
+  ]
+);
+
 /**
  * In-flight render holds — the fix for V2's documented race.
  *
@@ -268,3 +294,5 @@ export type TakeRow = typeof takes.$inferSelect;
 export type ReservationRow = typeof renderReservations.$inferSelect;
 export type PlaylistRow = typeof playlists.$inferSelect;
 export type PlaylistItemRow = typeof playlistItems.$inferSelect;
+export type StoryProfileRow = typeof storyProfiles.$inferSelect;
+export type StoryMemoryRow = typeof storyMemories.$inferSelect;

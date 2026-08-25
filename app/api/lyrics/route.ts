@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { lyricsRequestSchema, firstIssueMessage } from "@/lib/validation";
 import { OpenRouterError } from "@/lib/openrouter";
-import { generateLyrics } from "@/lib/generate";
 import type { LyricsResult } from "@/lib/types";
 import { checkGenerationRateLimit, rateLimitResponse } from "@/lib/rate-limit";
+import { generatePersonalizedLyrics } from "@/lib/personalized-lyrics";
 
 export const runtime = "nodejs";
 // LLM lyric generation can take tens of seconds; extend past the default.
@@ -26,7 +26,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   // Generation itself lives in lib/generate.ts so the MCP server produces
   // songs exactly the way this route does.
   try {
-    const result: LyricsResult = await generateLyrics(parsed.data);
+    const result: LyricsResult = await generatePersonalizedLyrics(parsed.data);
     return NextResponse.json(result);
   } catch (err) {
     const message =

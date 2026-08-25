@@ -64,6 +64,13 @@
       "when": 1787622883071,
       "tag": "0008_icy_quasar",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787648221166,
+      "tag": "0009_fair_vertigo",
+      "breakpoints": true
     }
   ]
 }

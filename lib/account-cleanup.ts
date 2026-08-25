@@ -8,6 +8,8 @@ import {
   renderReservations,
   songs,
   songUnlocks,
+  storyMemories,
+  storyProfiles,
 } from "@/lib/db/schema";
 
 /**
@@ -25,6 +27,8 @@ export async function deleteAccountData(userId: string): Promise<void> {
     await tx.delete(playlists).where(eq(playlists.userId, userId));
     await tx.delete(songUnlocks).where(eq(songUnlocks.userId, userId));
     await tx.delete(renderReservations).where(eq(renderReservations.userId, userId));
+    await tx.delete(storyMemories).where(eq(storyMemories.userId, userId));
+    await tx.delete(storyProfiles).where(eq(storyProfiles.userId, userId));
     await tx.delete(songs).where(eq(songs.userId, userId));
     await tx.delete(audioBlobs).where(eq(audioBlobs.userId, userId));
     await tx.delete(entitlements).where(eq(entitlements.userId, userId));

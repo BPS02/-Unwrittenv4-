@@ -214,9 +214,11 @@ abandoned.
 
 The thought-entry flow intentionally keeps exactly one session draft record.
 Because `sessionStorage` is tab-scoped, an unsaved personal draft is lost when
-the tab closes; this is a privacy tradeoff for shared devices. A future opt-in
-“Keep this on this device?” feature can add durable local storage, but the
-default should remain session-only.
+the tab closes; this is a privacy tradeoff for shared devices. For signed-in
+writers, the details submitted when lyrics are generated are also saved to the
+private **Your Story** profile in Neon. That memory can help future songs and
+can be disabled, edited, cleared, or deleted item-by-item at `/profile`.
+Anonymous writing remains session-only.
 
 ### Generation rate limits
 

@@ -63,7 +63,7 @@ function renderApp(children: React.ReactNode, enabled: boolean) {
           </header>
           <main id="main">{children}</main>
           <footer className="site-footer">
-            <p>Unwritten is a creative writing space, not a medical or therapeutic service. Your words stay in your browser session unless you choose to generate.</p>
+            <p>Unwritten is a creative writing space, not a medical or therapeutic service. When signed in, details used to generate lyrics may be saved privately to Your Story; you can edit, disable, or delete them from your profile.</p>
           </footer>
     </>
   );

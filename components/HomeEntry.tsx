@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useClerk, useUser } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import PixelField from "./PixelField";
 import { DRAFT_KEY, packExpiring, unpackExpiring } from "@/lib/draft-storage";
 import { getTemplate } from "@/lib/templates";
@@ -39,20 +39,19 @@ function TemplateIcon({ name }: { name: (typeof HOME_TEMPLATES)[number]["icon"] 
 }
 
 function YouAccountButton() {
-  const { openUserProfile } = useClerk();
   const { isLoaded, isSignedIn } = useUser();
 
   const openAccount = () => {
     if (!isLoaded) return;
     if (isSignedIn) {
-      openUserProfile();
+      window.location.assign("/profile");
     } else {
       window.location.assign("/sign-in");
     }
   };
 
   return (
-    <button type="button" onClick={openAccount} aria-label={isSignedIn ? "Open account settings" : "Sign in"}>
+    <button type="button" onClick={openAccount} aria-label={isSignedIn ? "Open your profile" : "Sign in"}>
       <span aria-hidden="true">♙</span><small>You</small>
     </button>
   );

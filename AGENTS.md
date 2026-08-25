@@ -160,6 +160,16 @@ is therefore enforced **client-side only** — the server never sees the questio
 set, so it cannot know how many were asked. Moving that rule server-side means
 persisting question sets first.
 
+### Your Story memory (`lib/story-memory.ts`, `/profile`)
+When a verified Clerk session is present, the personal details submitted for
+lyric generation are deduplicated into `story_memories` in Neon. Future guide
+briefs and generator prompts receive recent saved details as optional
+background; the current song always wins, and saved text is explicitly treated
+as quoted data rather than instructions. Anonymous lyrics remain fully public
+and ungated. Writers can add, edit, delete, clear, or disable memory from their
+profile. Clerk account deletion removes both `story_memories` and
+`story_profiles` in the same cleanup transaction as songs and audio.
+
 ### Music providers (`lib/music/`)
 A `MusicProvider` interface with `MUSIC_PROVIDER` selecting the
 implementation: `mureka` (current), `lyria`, `gpt-audio`, `elevenlabs`,

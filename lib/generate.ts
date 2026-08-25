@@ -53,13 +53,13 @@ export interface LyricsOutcome {
  * on any failure the caller hands the generator the raw sections instead,
  * so lyrics are never blocked on the assembly step.
  */
-async function assembleSongBrief(req: LyricsRequestParsed): Promise<string | null> {
+async function assembleSongBrief(req: LyricsRequestParsed, personalMemory: string[]): Promise<string | null> {
   const {
     text: systemPrompt,
     source: promptSource,
     config: promptConfig,
   } = await getManagedPrompt(guidePromptName(), GUIDE_SYSTEM_PROMPT);
-  const userPrompt = buildGuideBriefUserPrompt(req);
+  const userPrompt = buildGuideBriefUserPrompt(req, personalMemory);
   const model = promptConfig.model ?? getModel();
   const trace = startGeneration({
     name: "unwritten-guide-brief",
@@ -104,7 +104,7 @@ async function assembleSongBrief(req: LyricsRequestParsed): Promise<string | nul
  * guide assembles the brief, then the generator writes title, STYLE
  * production brief, and lyrics in one completion.
  */
-export async function generateLyrics(req: LyricsRequestParsed): Promise<LyricsOutcome> {
+export async function generateLyrics(req: LyricsRequestParsed, personalMemory: string[] = []): Promise<LyricsOutcome> {
   if (!isOpenRouterConfigured()) {
     const { title, lyrics } = generateMockLyrics(req);
     return {
@@ -115,7 +115,7 @@ export async function generateLyrics(req: LyricsRequestParsed): Promise<LyricsOu
     };
   }
 
-  const brief = await assembleSongBrief(req);
+  const brief = await assembleSongBrief(req, personalMemory);
 
   const {
     text: systemPrompt,
@@ -125,7 +125,7 @@ export async function generateLyrics(req: LyricsRequestParsed): Promise<LyricsOu
     genreGeneratorPromptName(req.controls.genre),
     genreGeneratorFallback(req.controls.genre)
   );
-  const userPrompt = buildGeneratorUserPrompt(req, brief);
+  const userPrompt = buildGeneratorUserPrompt(req, brief, personalMemory);
   const model = promptConfig.model ?? getLyricsModel();
   const trace = startGeneration({
     name: `unwritten-generator-${req.controls.genre}`,

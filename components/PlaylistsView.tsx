@@ -5,7 +5,6 @@ import Link from "next/link";
 import { artFor } from "@/lib/cover-art";
 import { lyricsForReading } from "@/lib/lyrics-display";
 import AudioPlayer from "./AudioPlayer";
-import TrackList from "./TrackList";
 import type { SavedSongWire } from "@/lib/songs-wire";
 import { readVaultCache, writeVaultCache } from "@/lib/vault-cache";
 
@@ -100,6 +99,7 @@ export default function PlaylistsView({ userId }: { userId: string }) {
   const [moodFilter, setMoodFilter] = useState("all");
   const [styleFilter, setStyleFilter] = useState("all");
   const [openingSongId, setOpeningSongId] = useState<string | null>(null);
+  const [collectionMenuFor, setCollectionMenuFor] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     const cached = readVaultCache(userId);
@@ -426,18 +426,6 @@ export default function PlaylistsView({ userId }: { userId: string }) {
     );
   }
 
-  const trackActions = {
-    playlists: playlists.map((p) => ({ id: p.id, name: p.name })),
-    onToggleFavorite: toggleFavorite,
-    onDelete: (song: SavedSongWire) => void deleteSong(song),
-    onAddTo: (playlistId: string, songId: string) =>
-      void patchPlaylist(playlistId, { add: songId }, "Added to playlist"),
-    onRemoveFrom: (playlistId: string, songId: string) =>
-      void patchPlaylist(playlistId, { remove: songId }, "Removed from playlist"),
-    onUnlock: (song: SavedSongWire) => void startUnlock(song),
-    onShare: (song: SavedSongWire) => void shareSong(song),
-  };
-
   // ── Listening room: opened by the featured "continue" card ──
   if (view.kind === "song") {
     const song = songById.get(view.id);
@@ -490,9 +478,7 @@ export default function PlaylistsView({ userId }: { userId: string }) {
       : (detailSongIds[view.id] ?? [])
           .map((id) => songById.get(id))
           .filter((s): s is SavedSongWire => Boolean(s));
-    const coverIds = tracks.slice(0, 4).map((s) => s.id);
-
-    if (isAuto && view.key === "all") {
+    if (isAuto || playlist) {
       const term = search.trim().toLocaleLowerCase();
       const moodWords = ["hopeful", "reflective", "warm", "wild", "heavy", "vulnerable", "uplifting", "sad", "happy", "romantic", "nostalgic", "determined", "calm", "dark", "bittersweet"];
       const availableMoods = moodWords.filter((mood) => tracks.some((song) => song.stylePrompt.toLocaleLowerCase().includes(mood)));
@@ -508,6 +494,12 @@ export default function PlaylistsView({ userId }: { userId: string }) {
             : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       const activeSong = tracks.find((song) => song.id === activeSongId) ?? null;
       const playable = tracks.filter((song) => Boolean(song.streamPath));
+      const collectionKicker = isAuto
+        ? view.key === "all" ? "Your complete collection" : "Songs you keep close"
+        : "Your personal collection";
+      const collectionDescription = isAuto
+        ? view.key === "all" ? "Every chapter you’ve turned into music." : "The songs that meant enough to save."
+        : "A collection shaped by you.";
       const move = (direction: -1 | 1) => {
         if (playable.length === 0) return;
         const current = playable.findIndex((song) => song.id === activeSongId);
@@ -524,15 +516,30 @@ export default function PlaylistsView({ userId }: { userId: string }) {
             <button type="button" className="all-songs-back" onClick={() => setView({ kind: "grid" })}>← <span>Playlists</span></button>
             <button type="button" className="all-songs-more" aria-label="More collection actions">•••</button>
             <div className="all-songs-heading">
-              <p>Your complete collection</p>
-              <h1>All songs</h1>
-              <span>Every chapter you’ve turned into music.</span>
+              <p>{collectionKicker}</p>
+              {renaming && playlist ? (
+                <form className="collection-hero-rename" onSubmit={(event) => {
+                  event.preventDefault();
+                  const value = newName.trim();
+                  setRenaming(false);
+                  if (value && value !== playlist.name) void patchPlaylist(playlist.id, { name: value }, "Playlist renamed");
+                  setNewName("");
+                }}>
+                  <input autoFocus value={newName} maxLength={80} aria-label="Playlist name" onChange={(event) => setNewName(event.target.value)} />
+                  <button type="submit">Save</button><button type="button" onClick={() => { setRenaming(false); setNewName(""); }}>Cancel</button>
+                </form>
+              ) : <h1>{title}</h1>}
+              <span>{collectionDescription}</span>
               <small>{tracks.length} {tracks.length === 1 ? "song" : "songs"} <i>•</i> Updated today</small>
               <div className="all-songs-play-actions">
                 <button type="button" className="all-songs-play" disabled={playable.length === 0} onClick={() => playable[0] && playSong(playable[0])}>▶</button>
                 <strong>Play all</strong>
                 <button type="button" className="all-songs-shuffle" disabled={playable.length === 0} onClick={() => { const song = playable[Math.floor(Math.random() * playable.length)]; if (song) playSong(song); }}>⌘ <span>Shuffle</span></button>
               </div>
+              {playlist && !renaming && <div className="collection-hero-actions">
+                <button type="button" onClick={() => { setNewName(playlist.name); setRenaming(true); }}>Rename</button>
+                <button type="button" onClick={() => void removePlaylist(playlist.id, playlist.name)}>Delete playlist</button>
+              </div>}
             </div>
           </header>
 
@@ -549,7 +556,7 @@ export default function PlaylistsView({ userId }: { userId: string }) {
                 <option value="all">Style</option>{availableStyles.map((style) => <option key={style} value={style}>{style}</option>)}
               </select>
             </div>
-            {visibleTracks.length === 0 ? <p className="tracks-empty">No songs match that search.</p> : (
+            {visibleTracks.length === 0 ? <p className="tracks-empty">{tracks.length === 0 ? "This collection is empty. Add songs from a song’s menu." : "No songs match these filters."}</p> : (
               <ol className="all-songs-list">
                 {visibleTracks.map((song) => (
                   <li key={song.id} className={activeSongId === song.id ? "is-active" : ""}>
@@ -558,7 +565,17 @@ export default function PlaylistsView({ userId }: { userId: string }) {
                       <span><strong>{song.title}</strong><small>{songDescriptor(song)} <i>•</i> {song.unlocked ? "Full song" : "Preview"}</small></span>
                     </button>
                     <button type="button" className={song.favorite ? "is-liked" : ""} aria-label={song.favorite ? `Unlike ${song.title}` : `Like ${song.title}`} onClick={() => void toggleFavorite(song)}>{song.favorite ? "♥" : "♡"}</button>
-                    <button type="button" aria-label={`More actions for ${song.title}`} onClick={() => void openSongRoom(song)}>•••</button>
+                    <div className="collection-row-menu-wrap">
+                      <button type="button" aria-label={`More actions for ${song.title}`} aria-expanded={collectionMenuFor === song.id} onClick={() => setCollectionMenuFor(collectionMenuFor === song.id ? null : song.id)}>•••</button>
+                      {collectionMenuFor === song.id && <div className="collection-row-menu" role="menu">
+                        <button type="button" role="menuitem" onClick={() => { setCollectionMenuFor(null); void openSongRoom(song); }}>Open song</button>
+                        {song.streamPath && <button type="button" role="menuitem" onClick={() => { setCollectionMenuFor(null); void shareSong(song); }}>Share song</button>}
+                        {!song.unlocked && song.streamPath && <button type="button" role="menuitem" onClick={() => { setCollectionMenuFor(null); void startUnlock(song); }}>Get Song Pass</button>}
+                        {playlist && <button type="button" role="menuitem" onClick={() => { setCollectionMenuFor(null); void patchPlaylist(playlist.id, { remove: song.id }, "Removed from playlist"); }}>Remove from this playlist</button>}
+                        {playlists.filter((item) => item.id !== playlist?.id).map((item) => <button key={item.id} type="button" role="menuitem" onClick={() => { setCollectionMenuFor(null); void patchPlaylist(item.id, { add: song.id }, `Added to ${item.name}`); }}>Add to {item.name}</button>)}
+                        <button type="button" role="menuitem" onClick={() => { setCollectionMenuFor(null); void deleteSong(song); }}>Delete song</button>
+                      </div>}
+                    </div>
                   </li>
                 ))}
               </ol>
@@ -583,107 +600,7 @@ export default function PlaylistsView({ userId }: { userId: string }) {
       );
     }
 
-    return (
-      <section className="pl-page">
-        <div className="pl-topbar">
-          <button
-            type="button"
-            className="pl-close"
-            aria-label="Back to playlists"
-            onClick={() => setView({ kind: "grid" })}
-          >
-            ✕
-          </button>
-          <span className="pl-crumb">Playlists</span>
-        </div>
-
-        <header className="pl-detail-head">
-          <CollageArt songIds={coverIds} glyph={isAuto && view.key === "liked" ? "★" : "♪"} />
-          <div className="pl-detail-meta">
-            {renaming && playlist ? (
-              <form
-                className="pl-rename"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const value = newName.trim();
-                  setRenaming(false);
-                  if (value && value !== playlist.name) {
-                    void patchPlaylist(playlist.id, { name: value }, "Playlist renamed");
-                  }
-                  setNewName("");
-                }}
-              >
-                <input
-                  type="text"
-                  autoFocus
-                  value={newName}
-                  maxLength={80}
-                  aria-label="Playlist name"
-                  onChange={(e) => setNewName(e.target.value)}
-                />
-                <button type="submit" className="btn btn-primary btn-sm">Save</button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => {
-                    setRenaming(false);
-                    setNewName("");
-                  }}
-                >
-                  Cancel
-                </button>
-              </form>
-            ) : (
-              <h1>{title}</h1>
-            )}
-            <p className="pl-detail-sub">
-              {isAuto && <span className="pl-auto-tag">Auto playlist</span>}
-              {tracks.length} {tracks.length === 1 ? "track" : "tracks"}
-            </p>
-            {playlist && !renaming && (
-              <div className="action-row">
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => {
-                    setNewName(playlist.name);
-                    setRenaming(true);
-                  }}
-                >
-                  Rename
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => void removePlaylist(playlist.id, playlist.name)}
-                >
-                  Delete playlist
-                </button>
-              </div>
-            )}
-          </div>
-        </header>
-
-        <TrackList
-          songs={tracks}
-          playlistId={view.kind === "playlist" ? view.id : null}
-          {...trackActions}
-          emptyMessage={
-            isAuto
-              ? view.key === "liked"
-                ? "Nothing liked yet — tap the star on a song."
-                : "Your vault is empty. Every song you generate is saved here."
-              : "Nothing here yet. Open a song's ⋯ menu to add it to this playlist."
-          }
-        />
-
-        {toast && (
-          <div className="toast" role="status" aria-live="polite">
-            {toast}
-          </div>
-        )}
-      </section>
-    );
+    return <section className="songs-empty"><h1>Collection unavailable</h1><p>This playlist may have been removed.</p><button type="button" className="btn btn-primary" onClick={() => setView({ kind: "grid" })}>Back to collections</button></section>;
   }
 
   // ── Grid ──

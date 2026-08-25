@@ -27,7 +27,7 @@ export const GENRE_DIRECTIONS: Record<Genre, string> = {
   "R&B / Soul": `R&B / SOUL-SPECIFIC DIRECTION:
 - Write fluid, emotionally direct lines with space for melisma, ad-libs, and call-and-response.
 - Use tasteful internal rhyme, sensual rhythm, and a chorus that deepens the central confession.
-- Add performance tags only where musically useful, such as [Ad-libs] or [Backing vocals].
+- Leave broad vocal runs, ad-libs, and backing-vocal direction in STYLE; use curly braces only for a short event at an exact point.
 - STYLE should define groove, BPM, harmonic warmth, bass and keys, vocal runs, and the song's emotional build.`,
   Indie: `INDIE-SPECIFIC DIRECTION:
 - Preserve unusual, specific details and an individual point of view instead of polishing them into clichés.
@@ -47,8 +47,7 @@ export const GENRE_DIRECTIONS: Record<Genre, string> = {
 - Do not write polished AI-poetry or generic inspirational language. Unless the writer used them literally, ban phrases and imagery built around: tapestry, symphony, echoes, whispers, shadows dancing, destiny, journey, testament, chapters turning, storms inside, shattered pieces, scars telling stories, a spark inside, finding my wings, rising from ashes, or light breaking through darkness.
 - Avoid abstract summaries such as “love is a journey” or “time heals all wounds.” Show one ordinary action, object, place, or remembered sentence instead. Use no more than one simple metaphor at a time, and never mix metaphors to make a line sound profound.
 - After drafting, silently check every lyric line: if it sounds like something an AI wrote rather than something this particular person would say or sing, replace it with plainer and more specific language.
-- Use human-sounding country performance tags throughout the lyrics, combining structural labels with useful directions such as [Verse 1, Fingerstyle guitar, Close vocal], [Pre-Chorus, Pedal steel enters], [Chorus, Full band, Backing vocals], or [Bridge, Stripped acoustic]. Vary them to match the song instead of copying these examples mechanically.
-- Keep meta tags inside square brackets so they guide the music generator and are never mistaken for sung words.
+- Keep square-bracket labels structural only. Put country instrumentation, room sound, vocal texture, and arrangement changes in STYLE; use curly braces only for a short event at an exact point.
 - STYLE should specify country lane, BPM, acoustic/electric instrumentation, vocal character, and narrative dynamic arc.`,
   "Hip-Hop": `HIP-HOP-SPECIFIC DIRECTION:
 - Every lyrical bar must participate in an audible rhyme scheme. Do not leave unrhymed filler lines.
@@ -60,7 +59,7 @@ export const GENRE_DIRECTIONS: Record<Genre, string> = {
   Electronic: `ELECTRONIC-SPECIFIC DIRECTION:
 - Write economical, rhythmically clean lyrics that leave room for builds, drops, texture, and repetition with purpose.
 - Center one strong lyrical motif and transform it across sections instead of overloading verses with explanation.
-- Use production section tags such as [Build] or [Drop] only where they clarify the musical arc.
+- Keep square-bracket labels structural only. Describe builds and drops in STYLE, using curly braces only for a short event at an exact point.
 - STYLE should specify electronic subgenre, BPM, drum pattern, synth palette, vocal processing, build, drop, and final release.`,
   "Lo-fi": `LO-FI-SPECIFIC DIRECTION:
 - Keep the writing intimate, understated, and close to a private thought; favor small observations over declarations.

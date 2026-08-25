@@ -36,7 +36,11 @@ export class ElevenLabsMusicProvider implements MusicProvider {
           "xi-api-key": apiKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ prompt, music_length_ms: lengthMs }),
+        body: JSON.stringify({
+          prompt: prompt.slice(0, 4100),
+          music_length_ms: lengthMs,
+          model_id: "music_v2",
+        }),
       });
       if (!res.ok) {
         const body = await res.text().catch(() => "");

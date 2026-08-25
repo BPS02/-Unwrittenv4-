@@ -172,6 +172,8 @@ describe("GENERATOR_SYSTEM_PROMPT", () => {
     expect(GENERATOR_SYSTEM_PROMPT).toContain("both [Verse 1] and [Verse 2]");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("Never stop after Verse 1");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("Verse 2 must advance the story");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("each verse must contain 8–12 short");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("chorus tighter at 4–8 lines");
   });
 });
 

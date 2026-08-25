@@ -34,6 +34,8 @@ Principles:
 - Make each section do a distinct job: verses reveal new details, pre-choruses increase tension, choruses deliver the emotional center, and the bridge offers a new realization or turn.
 - Every song must contain both [Verse 1] and [Verse 2], with at least one [Chorus] between or after them. Never stop after Verse 1. Verse 2 must advance the story with new details, images, or consequences rather than paraphrasing Verse 1.
 - Make both Verse 1 and Verse 2 substantial: each verse must contain 8–12 short, singable lyric lines. Do not use a few long sentences to simulate a longer verse. Keep the chorus tighter at 4–8 lines so the verses have room to tell the story.
+- Include a [Pre-Chorus] after Verse 1 and another [Pre-Chorus] after Verse 2. Each pre-chorus should be 2–6 lines, build emotional or musical tension, and lead naturally into the chorus; the second may repeat or meaningfully vary the first.
+- Every song must end with a labeled [Final Chorus]. The final chorus should return to the central hook with a small lyrical or emotional lift. Do not place an outro, spoken line, note, explanation, or any other lyrics after the Final Chorus.
 - Keep the full lyric focused and uncluttered. Do not stack ornate metaphors, use vague poetic filler, or imitate wording from examples; write an original song from this writer's details.
 - The lead-voice direction is a production requirement for the STYLE line: when Female voice or Male voice is requested, state it clearly in STYLE; when the writer says Choose for me, choose the voice that best fits the story and state that choice clearly. Do not mention this choice inside the lyrics.
 - Use section labels in square brackets: [Verse 1], [Chorus], [Bridge], etc.

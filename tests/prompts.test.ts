@@ -174,6 +174,10 @@ describe("GENERATOR_SYSTEM_PROMPT", () => {
     expect(GENERATOR_SYSTEM_PROMPT).toContain("Verse 2 must advance the story");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("each verse must contain 8–12 short");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("chorus tighter at 4–8 lines");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("[Pre-Chorus] after Verse 1");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("[Pre-Chorus] after Verse 2");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("end with a labeled [Final Chorus]");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("after the Final Chorus");
   });
 });
 

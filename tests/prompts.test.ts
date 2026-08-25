@@ -179,4 +179,11 @@ describe("genre generator prompts", () => {
     expect(prompt).toContain("LYRICS:");
     expect(prompt).toContain(GENRE_DIRECTIONS[genre]);
   });
+
+  it("requires every hip-hop bar to participate in an audible rhyme scheme", () => {
+    const direction = GENRE_DIRECTIONS["Hip-Hop"];
+    expect(direction).toContain("Every lyrical bar must participate in an audible rhyme scheme");
+    expect(direction).toContain("internal rhymes plus strong end rhymes");
+    expect(direction).toContain("Never distort grammar");
+  });
 });

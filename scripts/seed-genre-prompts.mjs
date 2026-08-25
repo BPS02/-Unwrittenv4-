@@ -8,7 +8,7 @@ const genres = {
   "indie": `INDIE-SPECIFIC DIRECTION:\n- Preserve unusual, specific details and an individual point of view instead of polishing them into clichés.\n- Allow asymmetry, understated hooks, slant rhyme, and a slightly unexpected image or structural turn.\n- Keep eccentricity emotionally legible and singable.\n- STYLE should identify the indie subtexture, tempo, distinctive instrumentation, vocal character, and dynamic contrast.`,
   "rock": `ROCK-SPECIFIC DIRECTION:\n- Write muscular, singable lines with forward motion and a chorus built to land with a band.\n- Use tension and release, strong verbs, and strategic repetition; avoid empty rebellion clichés.\n- Let the bridge or breakdown change the emotional pressure rather than merely restating the chorus.\n- STYLE should specify rock lane, BPM, guitar tone, drums, bass, vocal intensity, and the peak of the arrangement.`,
   "country": `COUNTRY-SPECIFIC DIRECTION:\n- Tell a clear story through places, objects, actions, and spoken-language phrasing grounded in the writer's details.\n- Use accessible rhyme and a chorus whose central phrase feels earned by the verses.\n- Avoid stock trucks, whiskey, small towns, porches, and dirt roads unless the writer actually supplied them.\n- STYLE should specify country lane, BPM, acoustic/electric instrumentation, vocal character, and narrative dynamic arc.`,
-  "hip-hop": `HIP-HOP-SPECIFIC DIRECTION:\n- Prioritize cadence, bar-to-bar momentum, multisyllabic and internal rhyme, and a distinct authentic voice.\n- Vary bar length intentionally, use wordplay rooted in the writer's details, and make the hook rhythmically undeniable.\n- Do not imitate, name, or closely mimic any living artist. Avoid filler boasts and forced slang.\n- STYLE should specify hip-hop lane, BPM, drum feel, bass, sample or synth palette, flow character, hook treatment, and beat changes.`,
+  "hip-hop": `HIP-HOP-SPECIFIC DIRECTION:\n- Every lyrical bar must participate in an audible rhyme scheme. Do not leave unrhymed filler lines.\n- Use frequent internal rhymes plus strong end rhymes; favor multisyllabic rhyme chains and evolve the rhyme sound every 2–4 bars.\n- Keep every rhyme natural, meaningful, and easy to perform. Never distort grammar or add empty words merely to force a rhyme.\n- Prioritize cadence and bar-to-bar momentum. Vary bar length intentionally, use wordplay rooted in the writer's details, and make the hook rhythmically undeniable.\n- Do not imitate, name, or closely mimic any living artist. Avoid filler boasts and forced slang.\n- STYLE should specify hip-hop lane, BPM, drum feel, bass, sample or synth palette, flow character, hook treatment, and beat changes.`,
   "electronic": `ELECTRONIC-SPECIFIC DIRECTION:\n- Write economical, rhythmically clean lyrics that leave room for builds, drops, texture, and repetition with purpose.\n- Center one strong lyrical motif and transform it across sections instead of overloading verses with explanation.\n- Use production section tags such as [Build] or [Drop] only where they clarify the musical arc.\n- STYLE should specify electronic subgenre, BPM, drum pattern, synth palette, vocal processing, build, drop, and final release.`,
   "lo-fi": `LO-FI-SPECIFIC DIRECTION:\n- Keep the writing intimate, understated, and close to a private thought; favor small observations over declarations.\n- Use loose rhyme, short phrases, negative space, and a gentle hook that can repeat without becoming theatrical.\n- Avoid making sadness decorative or vague; preserve the writer's real details.\n- STYLE should specify slow-to-mid BPM, dusty drums, warm keys or guitar, ambient texture, close vocal treatment, and restrained dynamics.`,
 };
@@ -27,7 +27,14 @@ const client = new LangfuseClient({
   baseUrl: process.env.LANGFUSE_BASE_URL || "https://cloud.langfuse.com",
 });
 const baseName = process.env.LANGFUSE_GENERATOR_PROMPT_NAME || "unwritten-generator";
-for (const [slug, direction] of Object.entries(genres)) {
+const requestedSlug = process.argv[2];
+if (requestedSlug && !(requestedSlug in genres)) {
+  throw new Error(`Unknown genre slug: ${requestedSlug}`);
+}
+const selected = requestedSlug
+  ? [[requestedSlug, genres[requestedSlug]]]
+  : Object.entries(genres);
+for (const [slug, direction] of selected) {
   const created = await client.prompt.create({
     name: `${baseName}-${slug}`,
     type: "chat",

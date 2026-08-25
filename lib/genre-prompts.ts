@@ -45,8 +45,10 @@ export const GENRE_DIRECTIONS: Record<Genre, string> = {
 - Avoid stock trucks, whiskey, small towns, porches, and dirt roads unless the writer actually supplied them.
 - STYLE should specify country lane, BPM, acoustic/electric instrumentation, vocal character, and narrative dynamic arc.`,
   "Hip-Hop": `HIP-HOP-SPECIFIC DIRECTION:
-- Prioritize cadence, bar-to-bar momentum, multisyllabic and internal rhyme, and a distinct authentic voice.
-- Vary bar length intentionally, use wordplay rooted in the writer's details, and make the hook rhythmically undeniable.
+- Every lyrical bar must participate in an audible rhyme scheme. Do not leave unrhymed filler lines.
+- Use frequent internal rhymes plus strong end rhymes; favor multisyllabic rhyme chains and evolve the rhyme sound every 2–4 bars.
+- Keep every rhyme natural, meaningful, and easy to perform. Never distort grammar or add empty words merely to force a rhyme.
+- Prioritize cadence and bar-to-bar momentum. Vary bar length intentionally, use wordplay rooted in the writer's details, and make the hook rhythmically undeniable.
 - Do not imitate, name, or closely mimic any living artist. Avoid filler boasts and forced slang.
 - STYLE should specify hip-hop lane, BPM, drum feel, bass, sample or synth palette, flow character, hook treatment, and beat changes.`,
   Electronic: `ELECTRONIC-SPECIFIC DIRECTION:

@@ -44,7 +44,7 @@ for (const [slug, direction] of selected) {
       model: "meta/muse-spark-1.2-contributor",
       temperature: 0.85,
       maxTokens: 3000,
-      reasoning: true,
+      reasoning: "minimal",
     },
     commitMessage: `Add ${slug} songwriting specialization`,
   });

@@ -32,4 +32,19 @@ describe("OpenRouter reasoning compatibility", () => {
     const retryBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body));
     expect(retryBody).not.toHaveProperty("reasoning");
   });
+
+  it("sends minimal reasoning effort while excluding reasoning text", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "test-key");
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({ choices: [{ message: { content: "lyrics" } }], model: "test" }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await chatComplete({ system: "system", user: "user", reasoning: "minimal" });
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body.reasoning).toEqual({ effort: "minimal", exclude: true });
+  });
 });

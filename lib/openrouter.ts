@@ -40,6 +40,15 @@ export interface ChatResult {
   usage?: ChatUsage;
 }
 
+export type ReasoningSetting =
+  | boolean
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
+
 export async function chatComplete(params: {
   system: string;
   user: string;
@@ -51,7 +60,7 @@ export async function chatComplete(params: {
    *  models like DeepSeek v4 reason by default and can spend the entire token
    *  budget thinking, returning an empty completion. Omit to use the
    *  provider's default. */
-  reasoning?: boolean;
+  reasoning?: ReasoningSetting;
 }): Promise<ChatResult> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -61,7 +70,7 @@ export async function chatComplete(params: {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), params.timeoutMs ?? 60_000);
   try {
-    const request = async (reasoning: boolean | undefined) =>
+    const request = async (reasoning: ReasoningSetting | undefined) =>
       fetch(OPENROUTER_URL, {
         method: "POST",
         signal: controller.signal,
@@ -79,7 +88,14 @@ export async function chatComplete(params: {
           ],
           temperature: params.temperature ?? 0.85,
           max_tokens: params.maxTokens ?? 1500,
-          ...(reasoning === undefined ? {} : { reasoning: { enabled: reasoning } }),
+          ...(reasoning === undefined
+            ? {}
+            : {
+                reasoning:
+                  typeof reasoning === "boolean"
+                    ? { enabled: reasoning }
+                    : { effort: reasoning, exclude: true },
+              }),
         }),
       });
 

@@ -1,6 +1,7 @@
 import { LangfuseClient } from "@langfuse/client";
 import { startObservation } from "@langfuse/tracing";
 import { getLangfuseSpanProcessor } from "./langfuse-runtime";
+import type { ReasoningSetting } from "./openrouter";
 
 /**
  * Optional Langfuse integration (server-side only).
@@ -37,7 +38,7 @@ export interface ManagedPromptConfig {
   temperature?: number;
   maxTokens?: number;
   /** Enable/disable provider reasoning mode (see chatComplete). */
-  reasoning?: boolean;
+  reasoning?: ReasoningSetting;
 }
 
 function parsePromptConfig(raw: unknown): ManagedPromptConfig {
@@ -51,7 +52,12 @@ function parsePromptConfig(raw: unknown): ManagedPromptConfig {
   if (typeof c.maxTokens === "number" && Number.isFinite(c.maxTokens) && c.maxTokens > 0) {
     out.maxTokens = Math.floor(c.maxTokens);
   }
-  if (typeof c.reasoning === "boolean") out.reasoning = c.reasoning;
+  if (
+    typeof c.reasoning === "boolean" ||
+    ["minimal", "low", "medium", "high", "xhigh", "max"].includes(String(c.reasoning))
+  ) {
+    out.reasoning = c.reasoning as ReasoningSetting;
+  }
   return out;
 }
 

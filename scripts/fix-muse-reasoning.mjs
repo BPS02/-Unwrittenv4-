@@ -32,8 +32,8 @@ for (const name of names) {
     type: "chat",
     prompt: current.prompt,
     labels: ["production"],
-    config: { ...current.config, reasoning: true },
-    commitMessage: "Enable mandatory Muse reasoning",
+    config: { ...current.config, reasoning: "minimal" },
+    commitMessage: "Reserve output budget with minimal Muse reasoning",
   });
   console.log(`${created.name} v${created.version}`);
 }

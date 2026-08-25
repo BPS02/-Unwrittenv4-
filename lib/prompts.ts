@@ -46,9 +46,12 @@ Principles:
 - The lead-voice direction is a production requirement for the STYLE line: when Female voice or Male voice is requested, state it clearly in STYLE; when the writer says Choose for me, choose the voice that best fits the story and state that choice clearly. Do not mention this choice inside the lyrics.
 - Use section labels in square brackets: [Verse 1], [Chorus], [Bridge], etc.
 - Keep imagery concrete and singable; avoid cliché where a specific detail from the brief can serve instead.
-- The STYLE line is handed directly to ElevenLabs Music v2. Write one concrete studio brief on one line, under 160 words. Specify the exact genre/subgenre, mood, BPM or narrow BPM range, production era or recording character, primary instruments, one lead vocalist, requested lead-vocal gender, vocal register and tone, vocal delivery, vocal recording/mix treatment, chorus backing-vocal behavior, arrangement progression, and ending.
-- Use precise vocal language such as close-mic'd, warm and natural, clear diction, conversational phrasing, emotionally restrained, breathy, lightly raspy, chest-forward, intimate, controlled vibrato, dry lead vocal, or centered lead vocal when it fits. Do not stack contradictory descriptors.
-- Unless the requested direction requires otherwise, explicitly exclude unwanted results in STYLE: no duet, no choir, no theatrical delivery, no exaggerated vibrato, no distorted vocals, no robotic phrasing, no spoken narration, and no abrupt ending. The lead singer must remain the same throughout; backing vocals may support choruses quietly but must not replace or overpower the lead.
+- PERSONALIZE THE STYLE BRIEF: translate the writer's personal details into performance and arrangement decisions. Never restate the details themselves.
+- Each available input yields exactly one musical decision: relationship → vocal distance (mic proximity, breathiness, restraint); central location → room tone and recording atmosphere; central memory → the instrument that carries the verses; what went unsaid → held-back or pushed vocal delivery; chorus message → size of the lift and whether backing vocals enter; change over time → arrangement arc pinned to named sections; final personal detail → how the track ends.
+- STYLE contains no proper nouns, names, dates, places, relationship words, or plot. Anything the model might sing does not belong in STYLE. Never invent a personal fact; when an input is missing, omit that mapping instead of filling it.
+- Every STYLE instruction must be actionable by a musician. Cut adjectives that do not change what someone plays. Keep STYLE to 90 words maximum.
+- Write these required STYLE slots in this exact order: (1) genre + subgenre, vocal type, one-word emotional register; (2) 3–5 named core instruments; (3) BPM + key; (4) what enters or drops at V1, C1, V2, bridge, and final; (5) mic character, dynamic ceiling, and phrasing note; (6) dry/wet, close/roomy, and production era; (7) exact final sound.
+- Exclude by default unless the emotion genuinely demands one: big reverb, synth pads, EDM drops, gospel choirs, string swells, click-track rigidity, auto-tune, and fade-outs.
 
 Output format — respond with EXACTLY this shape and nothing else:
 TITLE: <song title on one line>
@@ -193,6 +196,29 @@ TASK: QUESTIONS — before the lyrics are written, ask the writer a few follow-u
 TASK: BRIEF — put it all together. Everything the writer shared — the thought, the feelings, the details, and their answers to your questions — becomes one song brief the songwriter writes from.
 - Keep every name, object, place, and specific exactly as the writer gave it. The brief is their story, organised — never invent a detail, never generalise a specific away.
 - The writer's answers to the follow-up questions carry the most weight: those are the details they volunteered when asked directly. Every answered question must leave a trace in the brief.
+- Transform the assessment into songwriting material, not a summary of emotion labels. Identify, when the writer actually supplied enough information: (1) the main person or relationship, (2) the central moment, (3) the strongest physical detail, (4) what life was like before, (5) what changed, (6) what remains unresolved, (7) the emotional contrast, (8) a phrase or idea that could become the chorus hook, (9) a new realization suitable for the bridge, and (10) a concrete image that could return in the final chorus.
+- Build the brief from scenes, actions, objects, remembered words, relationships, and changes over time. Prefer one ordinary true detail over a polished metaphor. Never invent a missing item merely to complete the ten-part framework.
+- Use these reference patterns to recognize strong song material, never as wording to copy or facts to invent:
+  1. Missing someone: a repeated household ritual becomes the returning image.
+  2. Relationship ending: one quiet final trip or room carries what went unsaid.
+  3. Becoming a parent: one small physical gesture reveals the emotional change.
+  4. Mixed happiness and sadness: celebration and loss appear side by side.
+  5. Starting over: a sparse new room or first possession shows uncertainty and possibility.
+  6. Regret: a missed call, postponed conversation, or ordinary last exchange anchors the hook.
+  7. Friendship changing: an old daily habit contrasts with today's limited contact.
+  8. Falling in love: an imperfect, funny, unguarded moment replaces generic romance.
+  9. Leaving a difficult period: one ordinary exit scene shows relief arriving quietly.
+  10. Feeling left behind: visible signs of other people's milestones contrast with a familiar room.
+  11. Recovering confidence: an old humiliating moment contrasts with one completed action now.
+  12. Childhood memory: a shared game or object reveals how people made each other feel safe.
+  13. Family conflict: mirrored habits show how similarity creates closeness and friction.
+  14. Long-distance love: mismatched clocks and daily routines make distance tangible.
+  15. Losing a familiar place: a booth, table, sign, or erased mark proves those years happened.
+  16. Forgiving yourself: warning signs lead to understanding, not a forced triumphant resolution.
+  17. Everyday gratitude: a quiet repeated act stands for dependable love.
+  18. Caring for someone aging: a reversed responsibility holds affection, grief, and humor together.
+  19. Future uncertainty: repeated questions and unfinished plans show pressure without fake confidence.
+  20. Reconciliation: a small message or shared object becomes an opening, not an instant resolution.
 - Write short plain prose: what the song is about, what actually happened, the feelings in the writer's own words, and the concrete details worth singing.
 - Under 250 words. No lyrics, no rhymes, no headings, no advice, no commentary.
 - Output the brief and nothing else.

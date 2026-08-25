@@ -1,0 +1,219 @@
+[
+  {
+    "tags": ["celebratory", "relationship", "solo_female", "country_folk", "name_allowed"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_01_birthday_kitchen", "status": "approved",
+      "narrative_weight": { "past": 45, "present": 55 }, "song_intent": "celebrate",
+      "current_state": { "feeling": "warm gratitude", "intensity": 4 },
+      "relevant_past": "Weekend cooking became an easy way to spend time together.",
+      "building_blocks": { "central_relationship": "mother and adult child", "central_place": "home kitchen", "central_memory": "laughing while fixing a meal together", "what_went_unsaid": "I notice every quiet act of care", "change_over_time": "gratitude has become easier to say", "chorus_message": "your everyday care matters", "final_detail": "two plates ready before dinner" },
+      "emotional_register": "warm gratitude", "exact_phrases_to_keep": ["take your time"], "may_use": ["the first name Rosa", "cooking together"], "must_not_use": ["her age"],
+      "permissions": { "names": true, "places": false, "explicit_language": false }, "point_of_view": "second", "literalness": "literal",
+      "interpretations": [{ "field": "building_blocks.chorus_message", "basis": ["a4", "a6"], "confidence": "high" }]
+    }
+  },
+  {
+    "tags": ["sad_unresolved", "relationship", "high_past", "solo_male", "country_folk"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_02_silent_drive", "status": "approved",
+      "narrative_weight": { "past": 75, "present": 25 }, "song_intent": "leave_unresolved",
+      "current_state": { "feeling": "restrained grief", "intensity": 4 }, "relevant_past": "Long drives once held easy conversation before one final silent ride.",
+      "building_blocks": { "central_relationship": "former partner", "central_place": "inside a car", "central_memory": "driving home without turning on the radio", "what_went_unsaid": "neither person asked the other to stay", "change_over_time": "familiar conversation became silence", "chorus_message": "silence said what we could not", "final_detail": "a hand resting beside the radio" },
+      "emotional_register": "restrained grief", "exact_phrases_to_keep": ["we left the radio off"], "may_use": ["the quiet drive"], "must_not_use": ["the reason for the breakup"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "first", "literalness": "balanced",
+      "interpretations": [{ "field": "building_blocks.what_went_unsaid", "basis": ["a9"], "confidence": "medium" }]
+    }
+  },
+  {
+    "tags": ["mixed_feelings", "transition", "balanced", "solo_female", "pop"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_03_graduation", "status": "approved",
+      "narrative_weight": { "past": 50, "present": 50 }, "song_intent": "remember", "current_state": { "feeling": "proud sadness", "intensity": 4 },
+      "relevant_past": "Daily routines and shared hallways made classmates feel permanent.",
+      "building_blocks": { "central_relationship": "school friends", "central_place": "school hallway", "central_memory": "taking one last photograph by the lockers", "what_went_unsaid": "staying close will take effort", "change_over_time": "daily friends are becoming occasional calls", "chorus_message": "leaving can feel proud and painful", "final_detail": "an empty locker after the ceremony" },
+      "emotional_register": "proud sadness", "exact_phrases_to_keep": ["one last picture"], "may_use": ["lockers", "graduation"], "must_not_use": ["school name"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "first", "literalness": "balanced"
+    }
+  },
+  {
+    "tags": ["transition", "low_past", "solo_male", "pop_rock", "sparse"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_04_first_apartment", "status": "approved",
+      "narrative_weight": { "past": 20, "present": 80 }, "song_intent": "question", "current_state": { "feeling": "nervous hope", "intensity": 3 },
+      "relevant_past": "The move happened quickly with few belongings.",
+      "building_blocks": { "central_relationship": "none", "central_place": "nearly empty apartment", "central_memory": "carrying in one chair and two boxes", "what_went_unsaid": "I do not know if I am ready", "change_over_time": "dependence is becoming uncertain independence", "chorus_message": "an empty room can still be a beginning", "final_detail": "one key on the bare counter" },
+      "emotional_register": "nervous hope", "exact_phrases_to_keep": ["one chair, two boxes"], "may_use": ["bare room"], "must_not_use": ["street address"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "first", "literalness": "literal"
+    }
+  },
+  {
+    "tags": ["relationship", "high_past", "solo_male", "country_folk", "clean_strong_emotion"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_05_tomorrow_call", "status": "approved",
+      "narrative_weight": { "past": 85, "present": 15 }, "song_intent": "remember", "current_state": { "feeling": "quiet regret", "intensity": 5 },
+      "relevant_past": "A brief phone call ended with a promise to call the following day.",
+      "building_blocks": { "central_relationship": "father and adult child", "central_place": "at home by a phone", "central_memory": "ending a call early because work felt urgent", "what_went_unsaid": "I should have stayed on the line", "change_over_time": "tomorrow changed from a promise into regret", "chorus_message": "ordinary time should not be postponed", "final_detail": "the phone facedown on a desk" },
+      "emotional_register": "quiet regret", "exact_phrases_to_keep": ["I'll call tomorrow"], "may_use": ["the short call"], "must_not_use": ["medical diagnosis"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "first", "literalness": "literal",
+      "interpretations": [{ "field": "building_blocks.what_went_unsaid", "basis": ["a7", "a8"], "confidence": "high" }]
+    }
+  },
+  {
+    "tags": ["relationship", "balanced", "solo_female", "rnb_soul"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_06_birthday_messages", "status": "approved",
+      "narrative_weight": { "past": 55, "present": 45 }, "song_intent": "question", "current_state": { "feeling": "soft longing", "intensity": 3 },
+      "relevant_past": "Nightly conversations gradually became one short message each year.",
+      "building_blocks": { "central_relationship": "old best friend", "central_place": "bedroom during late calls", "central_memory": "talking until both phones needed charging", "what_went_unsaid": "I still wonder how your days are going", "change_over_time": "daily closeness became annual contact", "chorus_message": "knowing someone can fade quietly", "final_detail": "a birthday message left on read" },
+      "emotional_register": "soft longing", "exact_phrases_to_keep": ["happy birthday, stranger"], "may_use": ["late calls"], "must_not_use": ["friend's full name"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "second", "literalness": "balanced"
+    }
+  },
+  {
+    "tags": ["celebratory", "relationship", "low_past", "solo_female", "pop"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_07_pizza_laugh", "status": "approved",
+      "narrative_weight": { "past": 25, "present": 75 }, "song_intent": "celebrate", "current_state": { "feeling": "playful affection", "intensity": 4 },
+      "relevant_past": "A new relationship became comfortable through small unguarded moments.",
+      "building_blocks": { "central_relationship": "new partner", "central_place": "small restaurant", "central_memory": "laughing with a mouthful of pizza", "what_went_unsaid": "I like who I am around you", "change_over_time": "nerves became ease", "chorus_message": "being unguarded feels like love", "final_detail": "one last slice between two plates" },
+      "emotional_register": "playful affection", "exact_phrases_to_keep": ["don't hide your laugh"], "may_use": ["pizza"], "must_not_use": ["restaurant name"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "second", "literalness": "literal"
+    }
+  },
+  {
+    "tags": ["transition", "low_past", "solo_male", "pop_rock"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_08_last_shift", "status": "approved",
+      "narrative_weight": { "past": 30, "present": 70 }, "song_intent": "let_go", "current_state": { "feeling": "quiet relief", "intensity": 4 },
+      "relevant_past": "Sunday nights had become dominated by dread before every workweek.",
+      "building_blocks": { "central_relationship": "none", "central_place": "workplace parking lot", "central_memory": "laughing alone after the final shift", "what_went_unsaid": "I stayed longer than I should have", "change_over_time": "dread became a small unexpected laugh", "chorus_message": "relief can arrive without a speech", "final_detail": "an old badge in the cup holder" },
+      "emotional_register": "quiet relief", "exact_phrases_to_keep": ["Sunday night"], "may_use": ["parking lot", "work badge"], "must_not_use": ["employer name"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "first", "literalness": "balanced"
+    }
+  },
+  {
+    "tags": ["mixed_feelings", "low_past", "solo_female", "indie", "name_forbidden"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_09_same_room", "status": "approved",
+      "narrative_weight": { "past": 20, "present": 80 }, "song_intent": "question", "current_state": { "feeling": "restless doubt", "intensity": 3 },
+      "relevant_past": "The room still carries visible marks from childhood.",
+      "building_blocks": { "central_relationship": "peers moving through milestones", "central_place": "childhood bedroom", "central_memory": "measuring height against the wall", "what_went_unsaid": "I am afraid I am behind", "change_over_time": "the room stayed familiar while everyone changed", "chorus_message": "there may not be one correct timetable", "final_detail": "an invitation beside old wall marks" },
+      "emotional_register": "restless doubt", "exact_phrases_to_keep": ["same room"], "may_use": ["invitations", "wall marks"], "must_not_use": ["the name Jordan"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "first", "literalness": "metaphorical"
+    }
+  },
+  {
+    "tags": ["transition", "high_past", "solo_male", "pop", "revision"],
+    "revision_request": "Make the chorus bigger and use less of the past.",
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_10_karaoke", "status": "approved",
+      "narrative_weight": { "past": 70, "present": 30 }, "song_intent": "resolve", "current_state": { "feeling": "shaky pride", "intensity": 4 },
+      "relevant_past": "A classroom laugh led to years of refusing to sing in front of others.",
+      "building_blocks": { "central_relationship": "none", "central_place": "karaoke room", "central_memory": "finishing a song despite shaking hands", "what_went_unsaid": "one person's laugh carried too much power", "change_over_time": "silence became one completed performance", "chorus_message": "finishing mattered more than sounding perfect", "final_detail": "the microphone returned to its stand" },
+      "emotional_register": "shaky pride", "exact_phrases_to_keep": ["I finished it"], "may_use": ["microphone"], "must_not_use": ["classmate name"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "first", "literalness": "literal"
+    }
+  },
+  {
+    "tags": ["relationship", "high_past", "duet", "country_folk"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_11_blanket_fort", "status": "approved",
+      "narrative_weight": { "past": 80, "present": 20 }, "song_intent": "remember", "current_state": { "feeling": "gentle nostalgia", "intensity": 3 },
+      "relevant_past": "Two siblings built cushion forts whenever thunderstorms arrived.",
+      "building_blocks": { "central_relationship": "siblings", "central_place": "family living room", "central_memory": "hiding under blankets during thunder", "what_went_unsaid": "we made each other feel safe", "change_over_time": "childhood protection became adult loyalty", "chorus_message": "we built safety from ordinary things", "final_detail": "one blanket folded on the couch" },
+      "emotional_register": "gentle nostalgia", "exact_phrases_to_keep": ["blankets could save us"], "may_use": ["couch cushions", "thunder"], "must_not_use": ["family address"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "first", "literalness": "balanced"
+    }
+  },
+  {
+    "tags": ["relationship", "balanced", "duet", "pop_rock", "contradictory"],
+    "contradiction": "One answer says apologies never happen; another describes a recent apology.",
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_12_mirrored_silence", "status": "approved",
+      "narrative_weight": { "past": 50, "present": 50 }, "song_intent": "resolve", "current_state": { "feeling": "guarded affection", "intensity": 4 },
+      "relevant_past": "Arguments often end with both people going quiet.",
+      "building_blocks": { "central_relationship": "mother and adult child", "central_place": "family dining room", "central_memory": "both reaching for the same unsaid apology", "what_went_unsaid": "we may be more alike than either admits", "change_over_time": "silence may be starting to soften", "chorus_message": "similarity can wound and connect", "final_detail": "two untouched cups after an argument" },
+      "emotional_register": "guarded affection", "exact_phrases_to_keep": ["we both go quiet"], "may_use": ["two cups"], "must_not_use": ["the disputed accusation"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "second", "literalness": "balanced",
+      "interpretations": [{ "field": "building_blocks.change_over_time", "basis": ["a8", "a11"], "confidence": "low" }]
+    }
+  },
+  {
+    "tags": ["relationship", "balanced", "solo_female", "rnb_soul"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_13_two_clocks", "status": "approved",
+      "narrative_weight": { "past": 40, "present": 60 }, "song_intent": "remember", "current_state": { "feeling": "patient longing", "intensity": 3 },
+      "relevant_past": "Shared meals moved from one table to video calls across time zones.",
+      "building_blocks": { "central_relationship": "long-distance partner", "central_place": "two separate kitchens", "central_memory": "eating together through a screen", "what_went_unsaid": "the routine is both comfort and strain", "change_over_time": "shared evenings became opposite ends of a day", "chorus_message": "distance lives inside ordinary routines", "final_detail": "one goodnight meeting one good morning" },
+      "emotional_register": "patient longing", "exact_phrases_to_keep": ["goodnight, good morning"], "may_use": ["reheated dinner", "screen light"], "must_not_use": ["city names"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "second", "literalness": "literal"
+    }
+  },
+  {
+    "tags": ["sad_unresolved", "high_past", "solo_male", "country_folk", "place_allowed"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_14_closed_diner", "status": "approved",
+      "narrative_weight": { "past": 80, "present": 20 }, "song_intent": "remember", "current_state": { "feeling": "grounded loss", "intensity": 3 },
+      "relevant_past": "Friday nights accumulated in the same booth until the diner closed.",
+      "building_blocks": { "central_relationship": "group of old friends", "central_place": "Maple Street diner", "central_memory": "writing initials beneath the table", "what_went_unsaid": "we thought the place would always be there", "change_over_time": "a weekly meeting place became an empty storefront", "chorus_message": "losing a place can erase visible proof", "final_detail": "fresh paint over the old initials" },
+      "emotional_register": "grounded loss", "exact_phrases_to_keep": ["Friday booth"], "may_use": ["Maple Street", "coffee refills"], "must_not_use": ["friend names"],
+      "permissions": { "names": false, "places": true, "explicit_language": false }, "point_of_view": "first", "literalness": "literal"
+    }
+  },
+  {
+    "tags": ["transition", "balanced", "solo_female", "indie", "must_not_use_from_answers"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_15_left_late", "status": "approved",
+      "narrative_weight": { "past": 60, "present": 40 }, "song_intent": "let_go", "current_state": { "feeling": "tired resolve", "intensity": 4 },
+      "relevant_past": "The relationship continued after its damage had become clear.",
+      "building_blocks": { "central_relationship": "former partner", "central_place": "shared apartment doorway", "central_memory": "holding packed keys before leaving", "what_went_unsaid": "understanding was not the same as readiness", "change_over_time": "self-blame is becoming patience", "chorus_message": "leaving late is still leaving", "final_detail": "keys placed inside the doorway" },
+      "emotional_register": "tired resolve", "exact_phrases_to_keep": ["I knew before I left"], "may_use": ["packed bag", "keys"], "must_not_use": ["the threatening message quoted in answer a12"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "first", "literalness": "balanced"
+    }
+  },
+  {
+    "tags": ["celebratory", "relationship", "low_past", "solo_male", "rnb_soul"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_16_coffee", "status": "approved",
+      "narrative_weight": { "past": 25, "present": 75 }, "song_intent": "celebrate", "current_state": { "feeling": "steady love", "intensity": 3 },
+      "relevant_past": "A quiet morning habit became a dependable sign of care.",
+      "building_blocks": { "central_relationship": "married partners", "central_place": "home workspace", "central_memory": "finding coffee beside a laptop each morning", "what_went_unsaid": "small acts make me feel known", "change_over_time": "a repeated gesture gained more meaning", "chorus_message": "dependable love arrives quietly", "final_detail": "steam lifting beside the keyboard" },
+      "emotional_register": "steady love", "exact_phrases_to_keep": ["you never announce it"], "may_use": ["coffee", "laptop"], "must_not_use": ["workplace details"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "second", "literalness": "literal"
+    }
+  },
+  {
+    "tags": ["mixed_feelings", "relationship", "balanced", "duet", "country_folk"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_17_driving_roles", "status": "approved",
+      "narrative_weight": { "past": 55, "present": 45 }, "song_intent": "remember", "current_state": { "feeling": "tender worry", "intensity": 4 },
+      "relevant_past": "A father once taught his child to drive and gave constant instructions.",
+      "building_blocks": { "central_relationship": "father and adult child", "central_place": "inside a car", "central_memory": "the first nervous driving lesson", "what_went_unsaid": "the reversal is difficult to name", "change_over_time": "the teacher now rides to appointments", "chorus_message": "care can change seats without disappearing", "final_detail": "his hand pointing toward the brake" },
+      "emotional_register": "tender worry", "exact_phrases_to_keep": ["you still tell me when to brake"], "may_use": ["driving lesson"], "must_not_use": ["medical condition"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "second", "literalness": "balanced"
+    }
+  },
+  {
+    "tags": ["transition", "low_past", "solo_female", "hip_hop", "clean_strong_emotion"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_18_no_plan", "status": "approved",
+      "narrative_weight": { "past": 15, "present": 85 }, "song_intent": "question", "current_state": { "feeling": "pressured uncertainty", "intensity": 4 },
+      "relevant_past": "School provided a schedule that is about to end.",
+      "building_blocks": { "central_relationship": "family asking about plans", "central_place": "desk with unfinished applications", "central_memory": "hearing the same future question at dinner", "what_went_unsaid": "I do not have an answer yet", "change_over_time": "a fixed schedule is becoming open time", "chorus_message": "uncertainty is honest, not failure", "final_detail": "an unopened calendar beside the applications" },
+      "emotional_register": "pressured uncertainty", "exact_phrases_to_keep": ["what's the plan"], "may_use": ["applications", "calendar"], "must_not_use": ["profanity", "school name"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "first", "literalness": "literal"
+    }
+  },
+  {
+    "tags": ["relationship", "low_past", "solo_male", "reggae", "metaphorical"],
+    "story_map": {
+      "schema_version": "story_map.v1", "story_map_id": "sm_19_dessert_photo", "status": "approved",
+      "narrative_weight": { "past": 30, "present": 70 }, "song_intent": "resolve", "current_state": { "feeling": "cautious hope", "intensity": 3 },
+      "relevant_past": "Two siblings stopped speaking after an unresolved disagreement.",
+      "building_blocks": { "central_relationship": "estranged siblings", "central_place": "separate homes", "central_memory": "making the same dessert together", "what_went_unsaid": "the photograph may be an invitation", "change_over_time": "silence shifted into one small message", "chorus_message": "a small opening is not complete repair", "final_detail": "a dessert photograph with no caption" },
+      "emotional_register": "cautious hope", "exact_phrases_to_keep": ["no caption"], "may_use": ["dessert photo"], "must_not_use": ["reason for the argument"],
+      "permissions": { "names": false, "places": false, "explicit_language": false }, "point_of_view": "second", "literalness": "metaphorical",
+      "interpretations": [{ "field": "building_blocks.what_went_unsaid", "basis": ["a5"], "confidence": "low" }]
+    }
+  }
+]

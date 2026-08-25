@@ -43,7 +43,7 @@ async function main() {
         maxTokens: 2000,
         reasoning: true,
       },
-      commitMessage: "Guide: honor simplified direction and avoid asking about control choices",
+      commitMessage: "Guide: turn personal assessments into concrete songwriting briefs",
     },
     {
       name: process.env.LANGFUSE_GENERATOR_PROMPT_NAME || "unwritten-generator",

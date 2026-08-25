@@ -162,6 +162,14 @@ describe("GENERATOR_SYSTEM_PROMPT", () => {
     expect(GENERATOR_SYSTEM_PROMPT).toContain("production brief");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("BPM");
   });
+
+  it("uses the short, plainspoken, emotionally contrasting lyric standard", () => {
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("Prefer short lines, usually 2–8 words");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("small concrete moments");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("place them side by side");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("one immediately understandable central phrase");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("bridge offers a new realization or turn");
+  });
 });
 
 describe("genre generator prompts", () => {

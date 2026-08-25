@@ -26,7 +26,8 @@ Principles:
 - Honor the writer's actual words: weave the brief's phrases, images, names, and details into the lyrics naturally.
 - Be emotionally honest without being melodramatic. Never diagnose, never give therapeutic advice — this is creative expression, not treatment.
 - If feelings were not described, infer a gentle emotional tone from the story itself; do not invent feelings the writer did not express.
-- Follow the requested genre, mood, perspective, lyrical style, and structure precisely.
+- Follow the requested genre, mood, perspective, lyrical style, structure, and lead voice precisely.
+- The lead-voice direction is a production requirement for the STYLE line: when Female voice or Male voice is requested, state it clearly in STYLE; when the writer says Choose for me, choose the voice that best fits the story and state that choice clearly. Do not mention this choice inside the lyrics.
 - Use section labels in square brackets: [Verse 1], [Chorus], [Bridge], etc.
 - Keep imagery concrete and singable; avoid cliché where a specific detail from the brief can serve instead.
 - The STYLE line is the production brief handed directly to an AI music generation service (such as Suno or ElevenLabs Music): one paragraph on one line, under 120 words, covering genre, mood, tempo (BPM), instrumentation, vocal character, and dynamic arc. Be specific and evocative. It describes the music only — it must never appear inside the lyrics.
@@ -87,6 +88,7 @@ export function buildGeneratorUserPrompt(req: LyricsRequestParsed, brief?: strin
     `- Perspective: ${controls.perspective}`,
     `- Lyrical style: ${controls.lyricalStyle}`,
     `- Structure: ${controls.structure}`,
+    `- Lead voice: ${controls.vocalist === "Choose for me" ? "choose the voice that best fits the story" : controls.vocalist}`,
     `- Language: ${controls.keepClean ? "strictly no explicit language or profanity" : "explicit language is acceptable if it serves the song"}`
   );
   return lines.join("\n");
@@ -164,6 +166,7 @@ TASK: BRIEF — put it all together. Everything the writer shared — the though
 
 Both tasks:
 - Warm and curious, never clinical. You are a collaborator, not an intake form.
+- Treat the song-direction choices as settled instructions. Do not ask the writer to explain genre, mood, point of view, wording style, structure, or lead voice; ask only for missing personal story details.
 - This is creative expression, not therapy. Never diagnose, never advise, never probe self-harm, trauma, or medical detail. If the writing touches something painful, stay with the ordinary specifics around it — the room, the drive home, the song that was playing — not the pain itself.
 - Never ask for or repeat contact details, addresses, passwords, financial information, or anyone's full legal name.`;
 
@@ -186,7 +189,7 @@ export function buildGuideQuestionsUserPrompt(req: QuestionsRequestParsed): stri
   const { input, controls } = req;
   const lines: string[] = [`TASK: QUESTIONS`, ``, ...writerContextLines(input)];
   lines.push(
-    `SONG DIRECTION: ${controls.genre}, ${controls.mood} mood, ${controls.perspective}, ${controls.lyricalStyle} lyrics.`,
+    `SONG DIRECTION: ${controls.genre}, ${controls.mood} mood, ${controls.perspective}, ${controls.lyricalStyle} lyrics, ${controls.vocalist === "Choose for me" ? "voice chosen to fit the story" : controls.vocalist}.`,
     ``,
     `Ask what you still need to know to write this specific song. Do not ask for anything they already told you above.`
   );
@@ -205,7 +208,7 @@ export function buildGuideBriefUserPrompt(req: LyricsRequestParsed): string {
     lines.push(``);
   }
   lines.push(
-    `SONG DIRECTION: ${controls.genre}, ${controls.mood} mood, ${controls.perspective}, ${controls.lyricalStyle} lyrics.`,
+    `SONG DIRECTION: ${controls.genre}, ${controls.mood} mood, ${controls.perspective}, ${controls.lyricalStyle} lyrics, ${controls.vocalist === "Choose for me" ? "voice chosen to fit the story" : controls.vocalist}.`,
     ``,
     `Put everything above together into the song brief.`
   );

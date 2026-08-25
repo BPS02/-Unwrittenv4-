@@ -318,6 +318,9 @@ export function buildMockStylePrompt(req: {
   controls: LyricsRequestParsed["controls"];
 }): string {
   const { genre, mood } = req.controls;
+  const voice = req.controls.vocalist === "Choose for me"
+    ? "a lead voice chosen to fit the story"
+    : `a ${req.controls.vocalist.toLowerCase()}`;
   const tempoByMood: Record<string, string> = {
     Hopeful: "mid-tempo, around 96 BPM",
     Bittersweet: "gentle mid-tempo, around 84 BPM",
@@ -341,7 +344,7 @@ export function buildMockStylePrompt(req: {
   };
   return (
     `${genre} song, ${mood.toLowerCase()} mood, ${tempoByMood[mood] ?? "mid-tempo"}. ` +
-    `Instrumentation: ${instrumentation[genre] ?? "balanced full-band arrangement"}. ` +
+    `Instrumentation: ${instrumentation[genre] ?? "balanced full-band arrangement"}. Lead vocal: ${voice}. ` +
     `Song title: "${req.title}". Emotionally sincere performance, dynamic build from intimate opening to a fuller final chorus, clean modern production.`
   );
 }

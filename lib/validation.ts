@@ -6,6 +6,7 @@ import {
   LYRICAL_STYLES,
   MAX_QUESTIONS,
   STRUCTURES,
+  VOCALISTS,
 } from "./types";
 
 export const MAX_THOUGHT_LENGTH = 2000;
@@ -68,6 +69,7 @@ export const songControlsSchema = z.object({
   perspective: z.enum(PERSPECTIVES),
   lyricalStyle: z.enum(LYRICAL_STYLES),
   structure: z.enum(STRUCTURES),
+  vocalist: z.enum(VOCALISTS).default("Choose for me"),
   keepClean: z.boolean().default(true),
 });
 

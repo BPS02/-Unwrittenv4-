@@ -4,10 +4,10 @@ import { useId } from "react";
 import type { Genre, Mood, SongControls, SongInput } from "@/lib/types";
 import {
   GENRES,
-  LYRICAL_STYLES,
   MOODS,
-  PERSPECTIVES,
-  STRUCTURES,
+  VOCALISTS,
+  type LyricalStyle,
+  type Perspective,
 } from "@/lib/types";
 
 interface ShapeStepProps {
@@ -77,32 +77,40 @@ function ChipPicker<T extends string>(props: {
   );
 }
 
-function SelectField<T extends string>(props: {
+function PlainChoice<T extends string>(props: {
   label: string;
   value: T;
-  options: readonly T[];
+  options: readonly { value: T; label: string; icon: string }[];
   onChange: (value: T) => void;
 }) {
   const id = useId();
   return (
-    <div className="field">
-      <label className="field-label" htmlFor={id}>
-        {props.label}
-      </label>
-      <select
-        id={id}
-        value={props.value}
-        onChange={(e) => props.onChange(e.target.value as T)}
-      >
-        {props.options.map((o) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
+    <section className="plain-choice" aria-labelledby={id}>
+      <h3 id={id}>{props.label}</h3>
+      <div className="plain-choice-list" role="radiogroup" aria-labelledby={id}>
+        {props.options.map((option) => (
+          <button key={option.value} type="button" role="radio" aria-checked={props.value === option.value}
+            onClick={() => props.onChange(option.value)}>
+            <span aria-hidden="true">{props.value === option.value ? "✓" : option.icon}</span>
+            <strong>{option.label}</strong>
+          </button>
         ))}
-      </select>
-    </div>
+      </div>
+    </section>
   );
 }
+
+const STORY_CHOICES: readonly { value: Perspective; label: string; icon: string }[] = [
+  { value: "First person (I)", label: "Me, telling my story", icon: "♙" },
+  { value: "Second person (you)", label: "Me, talking to someone", icon: "♧" },
+  { value: "Third person (story)", label: "A story about someone else", icon: "○" },
+];
+
+const WORD_CHOICES: readonly { value: LyricalStyle; label: string; icon: string }[] = [
+  { value: "Plainspoken", label: "Simple and direct", icon: "○" },
+  { value: "Poetic & metaphorical", label: "Poetic and visual", icon: "❧" },
+  { value: "Storytelling", label: "Like a conversation", icon: "◯" },
+];
 
 export default function ShapeStep(props: ShapeStepProps) {
   const { input, controls, onControlsChange, onBack, onGenerate } = props;
@@ -148,12 +156,15 @@ export default function ShapeStep(props: ShapeStepProps) {
           onChange={(mood) => onControlsChange({ mood })}
         />
 
-        <details className="advanced-options shape-advanced">
-          <summary>Fine-tune the lyrics</summary>
+        <section className="shape-simple-controls">
+          <div className="shape-simple-heading">
+            <h2>Tell us how you want it to sound</h2>
+            <p>There are no wrong choices.</p>
+          </div>
           <div className="toggle-row">
             <div className="toggle-copy">
               <strong>Keep the language clean</strong>
-              <span>Avoid explicit language in the lyrics.</span>
+              <span>No explicit words</span>
             </div>
             <button
               type="button"
@@ -164,16 +175,18 @@ export default function ShapeStep(props: ShapeStepProps) {
               onClick={() => onControlsChange({ keepClean: !controls.keepClean })}
             />
           </div>
-          <div className="controls-grid">
-            <SelectField label="Perspective" value={controls.perspective} options={PERSPECTIVES} onChange={(perspective) => onControlsChange({ perspective })} />
-            <SelectField label="Lyrical style" value={controls.lyricalStyle} options={LYRICAL_STYLES} onChange={(lyricalStyle) => onControlsChange({ lyricalStyle })} />
-            <SelectField label="Structure" value={controls.structure} options={STRUCTURES} onChange={(structure) => onControlsChange({ structure })} />
-          </div>
-        </details>
+          <PlainChoice label="Who is telling the story?" value={controls.perspective} options={STORY_CHOICES} onChange={(perspective) => onControlsChange({ perspective })} />
+          <PlainChoice label="How should the words feel?" value={controls.lyricalStyle} options={WORD_CHOICES} onChange={(lyricalStyle) => onControlsChange({ lyricalStyle })} />
+          <PlainChoice label="Who should sing it?" value={controls.vocalist}
+            options={VOCALISTS.map((value) => ({ value, label: value, icon: value === "Female voice" ? "♀" : value === "Male voice" ? "♂" : "✦" }))}
+            onChange={(vocalist) => onControlsChange({ vocalist })} />
+          <div className="shape-auto-card"><span aria-hidden="true">✦</span><div><strong>We’ll shape the song for you</strong><small>We’ll give your story the structure that fits.</small></div><span aria-hidden="true">✓</span></div>
+        </section>
 
         <div className="shape-summary" aria-label="Your song direction">
           <span className="shape-overline">Your song</span>
           <p><span aria-hidden="true">{GENRE_EMOJI[controls.genre]}</span> {controls.genre} <i>·</i> <span aria-hidden="true">{MOOD_EMOJI[controls.mood]}</span> {controls.mood}</p>
+          <small>{STORY_CHOICES.find((choice) => choice.value === controls.perspective)?.label} · {WORD_CHOICES.find((choice) => choice.value === controls.lyricalStyle)?.label} · {controls.vocalist}</small>
         </div>
 
         <button type="button" className="shape-generate" onClick={onGenerate}>

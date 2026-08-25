@@ -43,7 +43,7 @@ async function main() {
         maxTokens: 2000,
         reasoning: true,
       },
-      commitMessage: "Guide config: reasoning mandatory for muse-spark, generous maxTokens",
+      commitMessage: "Guide: honor simplified direction and avoid asking about control choices",
     },
     {
       name: process.env.LANGFUSE_GENERATOR_PROMPT_NAME || "unwritten-generator",
@@ -55,7 +55,7 @@ async function main() {
         maxTokens: 3000,
         reasoning: false,
       },
-      commitMessage: "Seed V4 generator (TITLE/STYLE/LYRICS) from GENERATOR_SYSTEM_PROMPT",
+      commitMessage: "Generator: carry explicit lead voice into the music STYLE brief",
     },
   ];
 

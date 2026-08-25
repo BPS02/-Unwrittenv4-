@@ -48,6 +48,9 @@ export const STRUCTURES = [
 ] as const;
 export type Structure = (typeof STRUCTURES)[number];
 
+export const VOCALISTS = ["Choose for me", "Female voice", "Male voice"] as const;
+export type Vocalist = (typeof VOCALISTS)[number];
+
 /** Songwriting controls chosen in the "Shape" step. */
 export interface SongControls {
   genre: Genre;
@@ -55,6 +58,7 @@ export interface SongControls {
   perspective: Perspective;
   lyricalStyle: LyricalStyle;
   structure: Structure;
+  vocalist: Vocalist;
   /** true = avoid explicit language (default). */
   keepClean: boolean;
 }
@@ -203,6 +207,7 @@ export const DEFAULT_CONTROLS: SongControls = {
   perspective: "First person (I)",
   lyricalStyle: "Plainspoken",
   structure: "Verse – Chorus – Bridge",
+  vocalist: "Choose for me",
   keepClean: true,
 };
 

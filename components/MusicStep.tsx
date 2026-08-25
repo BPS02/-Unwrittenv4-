@@ -160,6 +160,7 @@ export default function MusicStep(props: MusicStepProps) {
     ["Genre", props.controls.genre],
     ["Mood", props.controls.mood],
     ["Perspective", props.controls.perspective],
+    ["Lead voice", props.controls.vocalist],
     ["Structure", props.controls.structure],
     ["Language", props.controls.keepClean ? "Clean" : "Explicit allowed"],
   ];
@@ -187,7 +188,7 @@ export default function MusicStep(props: MusicStepProps) {
             <div className="sound-trio">
               <div><span aria-hidden="true">♬</span><strong>{props.controls.genre}</strong></div>
               <div><span aria-hidden="true">☀</span><strong>{props.controls.mood}</strong></div>
-              <div><span aria-hidden="true">♙</span><strong>{props.controls.perspective}</strong></div>
+              <div><span aria-hidden="true">♙</span><strong>{props.controls.vocalist}</strong></div>
             </div>
             <p className="sound-structure">{props.controls.structure.replaceAll("-", "  •  ")}</p>
             <p className="sound-note">Warm, honest, and close to the voice.</p>

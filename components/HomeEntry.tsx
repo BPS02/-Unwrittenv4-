@@ -81,11 +81,13 @@ export default function HomeEntry({ clerkEnabled = true }: { clerkEnabled?: bool
       setError("Please keep this under 2,000 characters.");
       return;
     }
-    const previous = unpackExpiring<StoredDraft>(sessionStorage.getItem(DRAFT_KEY));
+    // The Home page starts a new setup. Never merge hidden context, feelings,
+    // answers, or questions from a previous draft into this new thought.
     sessionStorage.setItem(DRAFT_KEY, packExpiring({
       step: "shape", reached: "shape", mode: "freeform",
-      input: { ...EMPTY_INPUT, ...previous?.input, thought: value, templateId: undefined },
-      controls: { ...DEFAULT_CONTROLS, ...previous?.controls }, variation: 0, song: null,
+      input: { ...EMPTY_INPUT, thought: value },
+      controls: DEFAULT_CONTROLS,
+      variation: 0, song: null, songId: null, questions: [], answers: {},
     }));
     router.push("/create");
   }

@@ -24,6 +24,14 @@ describe("thought entry state model", () => {
     expect(unpackExpiring(packed, 101)).toMatchObject({ step: "shape" });
   });
 
+  it("starts a Home submission without carrying hidden details from an older setup", () => {
+    const home = source("components/HomeEntry.tsx");
+    expect(home).toContain("input: { ...EMPTY_INPUT, thought: value }");
+    expect(home).toContain("songId: null, questions: [], answers: {}");
+    expect(home).not.toContain("...previous?.input");
+    expect(home).not.toContain("...previous?.controls");
+  });
+
   it("routes templates through a dedicated screen without sensitive query parameters", () => {
     expect(source("components/HomeEntry.tsx")).toContain('router.push("/create/start")');
     expect(source("components/HomeEntry.tsx")).not.toMatch(/router\.push\([^)]*(?:thought|feelings|lyrics)/i);

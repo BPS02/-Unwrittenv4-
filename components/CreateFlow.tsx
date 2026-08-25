@@ -294,12 +294,26 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
 
   const updateInput = useCallback((patch: Partial<SongInput>) => {
     setInput((prev) => ({ ...prev, ...patch }));
+    // Questions belong to one exact setup. Editing any source detail makes
+    // the old set stale, so it must never travel into a different song.
+    if (["thought", "feelings", "feelingsText", "context", "templateId"].some((key) => key in patch)) {
+      setQuestions([]);
+      setAnswers({});
+      setMissingAnswers([]);
+      setQuestionsError(null);
+      setQuestionsStatus("ready");
+    }
     if (patch.thought !== undefined) setThoughtError(null);
     if (patch.context !== undefined) setContextError(null);
   }, []);
 
   const updateControls = useCallback((patch: Partial<SongControls>) => {
     setControls((prev) => ({ ...prev, ...patch }));
+    setQuestions([]);
+    setAnswers({});
+    setMissingAnswers([]);
+    setQuestionsError(null);
+    setQuestionsStatus("ready");
   }, []);
 
   function validateThought(): boolean {

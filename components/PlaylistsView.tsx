@@ -108,6 +108,9 @@ export default function PlaylistsView() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playTime, setPlayTime] = useState(0);
   const [playDuration, setPlayDuration] = useState(0);
+  const [collectionSort, setCollectionSort] = useState<"newest" | "oldest" | "alpha">("newest");
+  const [moodFilter, setMoodFilter] = useState("all");
+  const [styleFilter, setStyleFilter] = useState("all");
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -473,9 +476,18 @@ export default function PlaylistsView() {
 
     if (isAuto && view.key === "all") {
       const term = search.trim().toLocaleLowerCase();
-      const visibleTracks = tracks.filter((song) =>
-        !term || song.title.toLocaleLowerCase().includes(term) || song.stylePrompt.toLocaleLowerCase().includes(term)
-      );
+      const moodWords = ["hopeful", "reflective", "warm", "wild", "heavy", "vulnerable", "uplifting", "sad", "happy", "romantic", "nostalgic", "determined", "calm", "dark", "bittersweet"];
+      const availableMoods = moodWords.filter((mood) => tracks.some((song) => song.stylePrompt.toLocaleLowerCase().includes(mood)));
+      const availableStyles = [...new Set(tracks.map(songDescriptor))].sort((a, b) => a.localeCompare(b));
+      const visibleTracks = tracks
+        .filter((song) => !term || song.title.toLocaleLowerCase().includes(term) || song.stylePrompt.toLocaleLowerCase().includes(term))
+        .filter((song) => moodFilter === "all" || song.stylePrompt.toLocaleLowerCase().includes(moodFilter))
+        .filter((song) => styleFilter === "all" || songDescriptor(song) === styleFilter)
+        .sort((a, b) => collectionSort === "alpha"
+          ? a.title.localeCompare(b.title)
+          : collectionSort === "oldest"
+            ? new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       const activeSong = tracks.find((song) => song.id === activeSongId) ?? null;
       const playable = tracks.filter((song) => Boolean(song.streamPath));
       const move = (direction: -1 | 1) => {
@@ -506,7 +518,15 @@ export default function PlaylistsView() {
           <div className="all-songs-library">
             <div className="all-songs-filters">
               <label><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search these songs" /></label>
-              <button type="button">Newest⌄</button><button type="button">Mood⌄</button><button type="button">Style⌄</button>
+              <select aria-label="Sort songs" value={collectionSort} onChange={(event) => setCollectionSort(event.target.value as typeof collectionSort)}>
+                <option value="newest">Newest</option><option value="oldest">Oldest</option><option value="alpha">A–Z</option>
+              </select>
+              <select aria-label="Filter by mood" value={moodFilter} onChange={(event) => setMoodFilter(event.target.value)}>
+                <option value="all">Mood</option>{availableMoods.map((mood) => <option key={mood} value={mood}>{mood[0]?.toUpperCase()}{mood.slice(1)}</option>)}
+              </select>
+              <select aria-label="Filter by style" value={styleFilter} onChange={(event) => setStyleFilter(event.target.value)}>
+                <option value="all">Style</option>{availableStyles.map((style) => <option key={style} value={style}>{style}</option>)}
+              </select>
             </div>
             {visibleTracks.length === 0 ? <p className="tracks-empty">No songs match that search.</p> : (
               <ol className="all-songs-list">

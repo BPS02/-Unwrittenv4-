@@ -210,4 +210,13 @@ describe("genre generator prompts", () => {
     expect(direction).toContain("only bracketed labels allowed");
     expect(direction).toContain("production language exclusively in the STYLE line");
   });
+
+  it("makes country lyrics human, conversational, and free of AI-poetry", () => {
+    const direction = GENRE_DIRECTIONS.Country;
+    expect(direction).toContain("real person talking honestly");
+    expect(direction).toContain("familiar everyday words");
+    expect(direction).toContain("Do not write polished AI-poetry");
+    expect(direction).toContain("tapestry, symphony, echoes, whispers");
+    expect(direction).toContain("replace it with plainer and more specific language");
+  });
 });

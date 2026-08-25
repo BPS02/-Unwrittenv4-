@@ -2,7 +2,6 @@ import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { clerkEnabled } from "@/lib/clerk-config";
 import PlaylistsView from "@/components/PlaylistsView";
-import { listSongsWire } from "@/lib/songs-wire";
 
 export default async function SongsPage() {
   if (!clerkEnabled) {
@@ -10,6 +9,5 @@ export default async function SongsPage() {
   }
   const { userId, redirectToSignIn } = await auth();
   if (!userId) return redirectToSignIn({ returnBackUrl: "/songs" });
-  const { songs } = await listSongsWire(userId);
-  return <PlaylistsView initialSongs={songs} />;
+  return <PlaylistsView userId={userId} />;
 }

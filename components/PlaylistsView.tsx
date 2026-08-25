@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { artFor } from "@/lib/cover-art";
 import { lyricsForReading } from "@/lib/lyrics-display";
 import AudioPlayer from "./AudioPlayer";
 import TrackList from "./TrackList";
 import type { SavedSongWire } from "@/lib/songs-wire";
+import { readVaultCache, writeVaultCache } from "@/lib/vault-cache";
 
 export type { SavedSongWire } from "@/lib/songs-wire";
 
@@ -73,10 +74,10 @@ function CollageArt({ songIds, glyph }: { songIds: string[]; glyph?: string }) {
   );
 }
 
-export default function PlaylistsView({ initialSongs = [] }: { initialSongs?: SavedSongWire[] }) {
+export default function PlaylistsView({ userId }: { userId: string }) {
   // Render the library shell immediately; saved data hydrates into it without
   // replacing the whole page with an "Opening your vault" interstitial.
-  const [songs, setSongs] = useState<SavedSongWire[]>(initialSongs);
+  const [songs, setSongs] = useState<SavedSongWire[]>([]);
   const [playlists, setPlaylists] = useState<PlaylistWire[]>([]);
   const [detailSongIds, setDetailSongIds] = useState<Record<string, string[]>>({});
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +100,13 @@ export default function PlaylistsView({ initialSongs = [] }: { initialSongs?: Sa
   const [moodFilter, setMoodFilter] = useState("all");
   const [styleFilter, setStyleFilter] = useState("all");
   const [openingSongId, setOpeningSongId] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    const cached = readVaultCache(userId);
+    if (!cached) return;
+    setSongs(cached.songs);
+    setPlaylists(cached.playlists);
+  }, [userId]);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -157,15 +165,19 @@ export default function PlaylistsView({ initialSongs = [] }: { initialSongs?: Sa
         setError(errorMessageFrom(songsData, "Couldn't load your songs."));
         return;
       }
-      setSongs((songsData as { songs: SavedSongWire[] }).songs);
+      const freshSongs = (songsData as { songs: SavedSongWire[] }).songs;
+      setSongs(freshSongs);
+      let freshPlaylists: PlaylistWire[] = [];
       if (playlistsRes.ok) {
         const p: unknown = await playlistsRes.json().catch(() => null);
-        setPlaylists((p as { playlists: PlaylistWire[] })?.playlists ?? []);
+        freshPlaylists = (p as { playlists: PlaylistWire[] })?.playlists ?? [];
+        setPlaylists(freshPlaylists);
       }
+      writeVaultCache(userId, freshSongs, freshPlaylists);
     } catch {
       setError("Couldn't load your songs.");
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     void loadAll();

@@ -9,6 +9,8 @@ import { DRAFT_KEY, packExpiring, unpackExpiring } from "@/lib/draft-storage";
 import { getTemplate } from "@/lib/templates";
 import { DEFAULT_CONTROLS, EMPTY_INPUT, type SongControls, type SongInput } from "@/lib/types";
 import { MAX_THOUGHT_LENGTH, MIN_THOUGHT_WORDS, thoughtWordCount } from "@/lib/validation";
+import { readVaultCache, writeVaultCache, type CachedPlaylistWire } from "@/lib/vault-cache";
+import type { SavedSongWire } from "@/lib/songs-wire";
 
 export const SENTENCE_STARTERS = [
   "I keep thinking about…",
@@ -59,6 +61,7 @@ function YouAccountButton() {
 
 export default function HomeEntry({ clerkEnabled = true }: { clerkEnabled?: boolean }) {
   const router = useRouter();
+  const { user, isLoaded, isSignedIn } = useUser();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [thought, setThought] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +70,21 @@ export default function HomeEntry({ clerkEnabled = true }: { clerkEnabled?: bool
     const draft = unpackExpiring<StoredDraft>(sessionStorage.getItem(DRAFT_KEY));
     if (draft?.mode === "freeform" && draft.input?.thought) setThought(draft.input.thought);
   }, []);
+
+  useEffect(() => {
+    if (!clerkEnabled || !isLoaded || !isSignedIn || !user?.id || readVaultCache(user.id)) return;
+    const controller = new AbortController();
+    void Promise.all([
+      fetch("/api/songs", { signal: controller.signal }),
+      fetch("/api/playlists", { signal: controller.signal }),
+    ]).then(async ([songsResponse, playlistsResponse]) => {
+      if (!songsResponse.ok) return;
+      const songsBody = await songsResponse.json() as { songs?: SavedSongWire[] };
+      const playlistsBody = playlistsResponse.ok ? await playlistsResponse.json() as { playlists?: CachedPlaylistWire[] } : {};
+      writeVaultCache(user.id, songsBody.songs ?? [], playlistsBody.playlists ?? []);
+    }).catch(() => { /* My Songs will load normally if prefetching fails. */ });
+    return () => controller.abort();
+  }, [clerkEnabled, isLoaded, isSignedIn, user?.id]);
 
   function saveAndContinue(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

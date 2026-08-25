@@ -91,12 +91,13 @@ tests/                     Vitest suites for templates, validation, generation,
 
 When `LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY` are set, the server:
 
-- fetches the two managed prompts the flow runs on — the **guide**
+- fetches the shared **guide** prompt
   (`LANGFUSE_GUIDE_PROMPT_NAME`, default `unwritten-guide`: asks the follow-up
   questions, then puts everything together into the song brief) and the
-  **generator** (`LANGFUSE_GENERATOR_PROMPT_NAME`, default
-  `unwritten-generator`: writes title, STYLE production brief, and lyrics in
-  one completion). Create them as **chat prompts** with a `production` label
+  genre-specific **generator** (`LANGFUSE_GENERATOR_PROMPT_NAME` is the base
+  name, default `unwritten-generator`; the app appends `-pop`, `-country`,
+  `-hip-hop`, and the other supported genre slugs). Each writes title, STYLE
+  production brief, and lyrics in one completion. Create them as **chat prompts** with a `production` label
   in Langfuse to iterate/version without a deploy; the local templates in
   `lib/prompts.ts` are used as automatic fallbacks if a prompt or the service
   is unavailable;
@@ -121,7 +122,7 @@ See `.env.example` for the full annotated list:
 | `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` | No | Enables prompt management + tracing |
 | `LANGFUSE_BASE_URL` | No | Langfuse Cloud or self-hosted URL |
 | `LANGFUSE_TRACING_ENVIRONMENT`, `LANGFUSE_RELEASE` | No | Observation filters for deployment environment and release |
-| `LANGFUSE_GUIDE_PROMPT_NAME`, `LANGFUSE_GENERATOR_PROMPT_NAME` | No | The two managed prompt names (guide + generator) |
+| `LANGFUSE_GUIDE_PROMPT_NAME`, `LANGFUSE_GENERATOR_PROMPT_NAME` | No | Shared guide name and base name for genre generators |
 | `MUSIC_PROVIDER` | No (default `demo`) | `demo` or `elevenlabs` |
 | `ELEVENLABS_API_KEY` | Only if `MUSIC_PROVIDER=elevenlabs` | ElevenLabs Music API |
 | `MUSIC_LENGTH_MS` | No (default 30000) | Track length for real providers |

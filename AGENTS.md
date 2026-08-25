@@ -124,8 +124,8 @@ can go.
 the web routes and the MCP server, so a song made through Codex is produced
 identically to one made on the site.
 
-V4's pipeline is two managed prompts end to end: the **guide** asks the
-follow-up questions and then assembles the song brief (`assembleSongBrief`,
+V4's pipeline uses one shared **guide** and genre-specific **generator**
+prompts: the guide asks the follow-up questions and then assembles the song brief (`assembleSongBrief`,
 best-effort — the raw sections go to the generator directly on failure), and
 the **generator** writes `TITLE:` + `STYLE:` + `LYRICS:` in one completion.
 The style travels to the client with the lyrics and comes back in the render
@@ -180,12 +180,13 @@ V4 runs the whole creation flow on **two chat prompts** managed in Langfuse
    the writer through telling the personal detail behind their song and then
    puts it all together. One system prompt, two tasks named on the request's
    `TASK:` line: `QUESTIONS` and `BRIEF`. Seeded from `GUIDE_SYSTEM_PROMPT`.
-2. **The generator** (`unwritten-generator`, `LANGFUSE_GENERATOR_PROMPT_NAME`)
-   — writes the complete song in one completion: `TITLE:`, the `STYLE:`
+2. **The genre generators** (`unwritten-generator-<genre>`, using
+   `LANGFUSE_GENERATOR_PROMPT_NAME` as the base name) — the selected genre's
+   prompt writes the complete song in one completion: `TITLE:`, the `STYLE:`
    production brief handed to the music provider, and `LYRICS:`. Seeded from
    `GENERATOR_SYSTEM_PROMPT`.
 
-These two are the ONLY prompts — the browse-templates path is model-free:
+The browse-templates path remains model-free:
 starter templates in `lib/templates.ts` are hand-curated under
 research-grounded emotion families, and choosing one selects its feelings
 and a hand-written opening thought instantly.

@@ -4,6 +4,12 @@ import {
   buildGeneratorUserPrompt,
   parseGeneratorCompletion,
 } from "@/lib/prompts";
+import {
+  GENRE_DIRECTIONS,
+  genreGeneratorFallback,
+  genreGeneratorPromptName,
+} from "@/lib/genre-prompts";
+import { GENRES } from "@/lib/types";
 import { resolveStylePrompt } from "@/lib/generate";
 import { lyricsRequestSchema } from "@/lib/validation";
 import { DEFAULT_CONTROLS } from "@/lib/types";
@@ -155,5 +161,22 @@ describe("GENERATOR_SYSTEM_PROMPT", () => {
   it("describes the STYLE line as the music production brief", () => {
     expect(GENERATOR_SYSTEM_PROMPT).toContain("production brief");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("BPM");
+  });
+});
+
+describe("genre generator prompts", () => {
+  it("routes every supported genre to a distinct managed prompt", () => {
+    const names = GENRES.map(genreGeneratorPromptName);
+    expect(new Set(names).size).toBe(GENRES.length);
+    expect(names).toContain("unwritten-generator-country");
+    expect(names).toContain("unwritten-generator-hip-hop");
+  });
+
+  it.each(GENRES)("keeps the output contract and adds %s direction", (genre) => {
+    const prompt = genreGeneratorFallback(genre);
+    expect(prompt).toContain("TITLE:");
+    expect(prompt).toContain("STYLE:");
+    expect(prompt).toContain("LYRICS:");
+    expect(prompt).toContain(GENRE_DIRECTIONS[genre]);
   });
 });

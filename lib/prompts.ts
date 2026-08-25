@@ -7,17 +7,17 @@ import type { LyricsRequestParsed, QuestionsRequestParsed } from "./validation";
  * and iterated without a deploy; these are the built-in fallbacks and the
  * canonical source for tests.
  *
- * V4 runs the whole creation flow on TWO managed prompts:
+ * V4 uses one shared guide and genre-specific generator prompts:
  *
  * 1. THE GUIDE (`unwritten-guide`) — guides the writer through telling the
  *    personal detail behind their song (the follow-up questions), then puts
  *    everything they shared together into one song brief.
- * 2. THE GENERATOR (`unwritten-generator`) — writes the song from that brief
- *    in a single completion: title, the production STYLE brief handed to the
- *    music provider, and the lyrics. There is no separate music prompt.
+ * 2. THE GENERATORS (`unwritten-generator-<genre>`) — each writes the song
+ *    from that brief in a single completion: title, the production STYLE
+ *    brief handed to the music provider, and lyrics. There is no separate
+ *    music prompt.
  *
- * These two are the ONLY prompts — the starter templates are hand-curated in
- * lib/templates.ts, with no model involved.
+ * Starter templates remain hand-curated in lib/templates.ts, with no model.
  */
 
 export const GENERATOR_SYSTEM_PROMPT = `You are the songwriter and producer for a songwriting service. From a song brief built out of a person's own words, you write the complete song in one pass: the title, the production style for the music generator, and the lyrics.

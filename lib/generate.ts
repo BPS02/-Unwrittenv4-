@@ -8,7 +8,6 @@ import {
   isOpenRouterConfigured,
 } from "./openrouter";
 import {
-  GENERATOR_SYSTEM_PROMPT,
   GUIDE_SYSTEM_PROMPT,
   buildGeneratorUserPrompt,
   buildGuideBriefUserPrompt,
@@ -18,6 +17,7 @@ import {
   parseQuestionsCompletion,
 } from "./prompts";
 import { getManagedPrompt, startGeneration } from "./langfuse";
+import { genreGeneratorFallback, genreGeneratorPromptName } from "./genre-prompts";
 import { MIN_QUESTIONS, type SongQuestion } from "./types";
 import type { LyricsRequestParsed, QuestionsRequestParsed } from "./validation";
 
@@ -28,18 +28,14 @@ import type { LyricsRequestParsed, QuestionsRequestParsed } from "./validation";
  * through Claude is produced exactly like one made on the site — same
  * managed prompts, same models, same tracing.
  *
- * The whole flow runs on TWO managed prompts (see lib/prompts.ts): the GUIDE
- * asks the follow-up questions and then puts everything the writer shared
- * together into a song brief; the GENERATOR turns that brief into the song —
- * title, production STYLE brief, and lyrics — in one completion.
+ * The GUIDE asks follow-up questions and assembles the song brief. The chosen
+ * genre then selects one specialized GENERATOR prompt, which writes title,
+ * production STYLE brief, and lyrics in one completion.
  */
 
 /** Managed prompt names, overridable per deployment. */
 function guidePromptName(): string {
   return process.env.LANGFUSE_GUIDE_PROMPT_NAME || "unwritten-guide";
-}
-function generatorPromptName(): string {
-  return process.env.LANGFUSE_GENERATOR_PROMPT_NAME || "unwritten-generator";
 }
 
 export interface LyricsOutcome {
@@ -125,11 +121,14 @@ export async function generateLyrics(req: LyricsRequestParsed): Promise<LyricsOu
     text: systemPrompt,
     source: promptSource,
     config: promptConfig,
-  } = await getManagedPrompt(generatorPromptName(), GENERATOR_SYSTEM_PROMPT);
+  } = await getManagedPrompt(
+    genreGeneratorPromptName(req.controls.genre),
+    genreGeneratorFallback(req.controls.genre)
+  );
   const userPrompt = buildGeneratorUserPrompt(req, brief);
   const model = promptConfig.model ?? getLyricsModel();
   const trace = startGeneration({
-    name: "unwritten-generator",
+    name: `unwritten-generator-${req.controls.genre}`,
     model,
     input: { system: systemPrompt, user: userPrompt },
     metadata: {

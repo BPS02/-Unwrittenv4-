@@ -40,6 +40,17 @@ const SORT_LABELS: Record<Sort, string> = {
   alpha: "A–Z",
 };
 
+function clock(seconds: number): string {
+  if (!Number.isFinite(seconds)) return "0:00";
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+}
+
+function songDescriptor(song: SavedSongWire): string {
+  const first = song.stylePrompt.split(/[,.;|]/)[0]?.trim();
+  return first || song.provider || "Original song";
+}
+
 /**
  * The two built-in views. They are derived, never stored: "Liked" is just
  * `favorite === true` and "All songs" is the vault itself, so they cannot
@@ -92,12 +103,39 @@ export default function PlaylistsView() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const coverBackfillAttempted = useRef(new Set<string>());
+  const playerRef = useRef<HTMLAudioElement>(null);
+  const [activeSongId, setActiveSongId] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playTime, setPlayTime] = useState(0);
+  const [playDuration, setPlayDuration] = useState(0);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 3200);
   }, []);
+
+  const playSong = useCallback((song: SavedSongWire) => {
+    if (!song.streamPath) {
+      showToast("This song’s audio is no longer available.");
+      return;
+    }
+    if (activeSongId === song.id && playerRef.current) {
+      if (playerRef.current.paused) void playerRef.current.play();
+      else playerRef.current.pause();
+      return;
+    }
+    setActiveSongId(song.id);
+    setPlayTime(0);
+    setPlayDuration(0);
+    setIsPlaying(true);
+  }, [activeSongId, showToast]);
+
+  useEffect(() => {
+    if (!activeSongId || !playerRef.current) return;
+    playerRef.current.load();
+    void playerRef.current.play().catch(() => setIsPlaying(false));
+  }, [activeSongId]);
 
   const loadAll = useCallback(async () => {
     try {
@@ -432,6 +470,77 @@ export default function PlaylistsView() {
           .map((id) => songById.get(id))
           .filter((s): s is SavedSongWire => Boolean(s));
     const coverIds = tracks.slice(0, 4).map((s) => s.id);
+
+    if (isAuto && view.key === "all") {
+      const term = search.trim().toLocaleLowerCase();
+      const visibleTracks = tracks.filter((song) =>
+        !term || song.title.toLocaleLowerCase().includes(term) || song.stylePrompt.toLocaleLowerCase().includes(term)
+      );
+      const activeSong = tracks.find((song) => song.id === activeSongId) ?? null;
+      const playable = tracks.filter((song) => Boolean(song.streamPath));
+      const move = (direction: -1 | 1) => {
+        if (playable.length === 0) return;
+        const current = playable.findIndex((song) => song.id === activeSongId);
+        const next = playable[(current < 0 ? 0 : current + direction + playable.length) % playable.length];
+        if (next) playSong(next);
+      };
+      return (
+        <section className="all-songs-page">
+          <header className="all-songs-hero">
+            <div className="all-songs-hero-shade" />
+            <button type="button" className="all-songs-back" onClick={() => setView({ kind: "grid" })}>← <span>Playlists</span></button>
+            <button type="button" className="all-songs-more" aria-label="More collection actions">•••</button>
+            <div className="all-songs-heading">
+              <p>Your complete collection</p>
+              <h1>All songs</h1>
+              <span>Every chapter you’ve turned into music.</span>
+              <small>{tracks.length} {tracks.length === 1 ? "song" : "songs"} <i>•</i> Updated today</small>
+              <div className="all-songs-play-actions">
+                <button type="button" className="all-songs-play" disabled={playable.length === 0} onClick={() => playable[0] && playSong(playable[0])}>▶</button>
+                <strong>Play all</strong>
+                <button type="button" className="all-songs-shuffle" disabled={playable.length === 0} onClick={() => { const song = playable[Math.floor(Math.random() * playable.length)]; if (song) playSong(song); }}>⌘ <span>Shuffle</span></button>
+              </div>
+            </div>
+          </header>
+
+          <div className="all-songs-library">
+            <div className="all-songs-filters">
+              <label><span>⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search these songs" /></label>
+              <button type="button">Newest⌄</button><button type="button">Mood⌄</button><button type="button">Style⌄</button>
+            </div>
+            {visibleTracks.length === 0 ? <p className="tracks-empty">No songs match that search.</p> : (
+              <ol className="all-songs-list">
+                {visibleTracks.map((song) => (
+                  <li key={song.id} className={activeSongId === song.id ? "is-active" : ""}>
+                    <button type="button" className="all-song-main" onClick={() => playSong(song)}>
+                      <span className="all-song-art" style={song.coverArt ? undefined : { background: artFor(song.id) }}>{song.coverArt && <img src={song.coverArt} alt="" />}<i>{activeSongId === song.id && isPlaying ? "▮▮" : "▶"}</i></span>
+                      <span><strong>{song.title}</strong><small>{songDescriptor(song)} <i>•</i> {song.unlocked ? "Full song" : "Preview"}</small></span>
+                    </button>
+                    <button type="button" className={song.favorite ? "is-liked" : ""} aria-label={song.favorite ? `Unlike ${song.title}` : `Like ${song.title}`} onClick={() => void toggleFavorite(song)}>{song.favorite ? "♥" : "♡"}</button>
+                    <button type="button" aria-label={`More actions for ${song.title}`} onClick={() => setView({ kind: "song", id: song.id })}>•••</button>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+
+          {activeSong?.streamPath && <>
+            <audio ref={playerRef} src={activeSong.streamPath} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onTimeUpdate={(event) => setPlayTime(event.currentTarget.currentTime)} onLoadedMetadata={(event) => setPlayDuration(event.currentTarget.duration)} onEnded={() => move(1)} />
+            <div className="all-songs-player">
+              <button type="button" className="player-collapse" aria-label="Collapse player">⌃</button>
+              <span className="player-art" style={activeSong.coverArt ? undefined : { background: artFor(activeSong.id) }}>{activeSong.coverArt && <img src={activeSong.coverArt} alt="" />}</span>
+              <span className="player-title"><strong>{activeSong.title}</strong><small>{clock(playTime)}</small></span>
+              <span className="player-progress"><i style={{ width: `${playDuration ? (playTime / playDuration) * 100 : 0}%` }} /></span>
+              <small>{clock(playDuration)}</small>
+              <button type="button" onClick={() => move(-1)} aria-label="Previous song">◀</button>
+              <button type="button" className="player-pause" onClick={() => playSong(activeSong)} aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? "Ⅱ" : "▶"}</button>
+              <button type="button" onClick={() => move(1)} aria-label="Next song">▶</button>
+            </div>
+          </>}
+          {toast && <div className="toast" role="status" aria-live="polite">{toast}</div>}
+        </section>
+      );
+    }
 
     return (
       <section className="pl-page">

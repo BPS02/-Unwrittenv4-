@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { get } from "@vercel/blob";
 import { readAudioBytes, readAudioMeta, resolveAudio } from "@/lib/audio-store";
 import { clerkEnabled } from "@/lib/clerk-config";
+import { audioDisposition } from "@/lib/audio-download";
 
 export const runtime = "nodejs";
 
@@ -57,12 +58,11 @@ export async function GET(
     }
   }
 
-  const disposition = wantsDownload ? `attachment; filename="unwritten-song"` : "inline";
-
   // ── Postgres-backed audio (everything rendered since the move) ──
   if (entry.kind === "pg") {
     const meta = await readAudioMeta(entry.audioId);
     if (!meta) return NextResponse.json({ error: GONE }, { status: 404 });
+    const disposition = audioDisposition(wantsDownload, meta.mimeType);
 
     const rangeHeader = request.headers.get("range");
     const match = rangeHeader?.match(/^bytes=(\d*)-(\d*)$/);
@@ -124,13 +124,14 @@ export async function GET(
     if (!result || result.statusCode !== 200 || !result.stream) {
       return NextResponse.json({ error: GONE }, { status: 404 });
     }
+    const mimeType = result.blob.contentType || "audio/mpeg";
     return new Response(result.stream, {
       status: 200,
       headers: {
-        "Content-Type": result.blob.contentType || "audio/mpeg",
+        "Content-Type": mimeType,
         "Cache-Control": "private, no-cache",
         "X-Content-Type-Options": "nosniff",
-        "Content-Disposition": disposition,
+        "Content-Disposition": audioDisposition(wantsDownload, mimeType),
       },
     });
   }
@@ -143,7 +144,7 @@ export async function GET(
       "Content-Type": entry.mimeType,
       "Content-Length": String(body.byteLength),
       "Cache-Control": "no-store",
-      "Content-Disposition": disposition,
+      "Content-Disposition": audioDisposition(wantsDownload, entry.mimeType),
       "Accept-Ranges": "none",
     },
   });

@@ -181,6 +181,8 @@ describe("GENERATOR_SYSTEM_PROMPT", () => {
     expect(GENERATOR_SYSTEM_PROMPT).toContain("after the Final Chorus");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("under 2,000 characters");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("Never repeat a word back-to-back");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("Every section label must combine");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("at least four non-structural performance directions");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("BANNED AI-SOUNDING WORDS AND PHRASES");
     for (const term of bannedAiLyricTerms) expect(GENERATOR_SYSTEM_PROMPT).toContain(term);
   });
@@ -209,11 +211,11 @@ describe("genre generator prompts", () => {
     expect(direction).toContain("Never distort grammar");
   });
 
-  it("keeps AI music tags and production metadata out of country lyrics", () => {
+  it("puts useful performance meta tags back into country lyrics", () => {
     const direction = GENRE_DIRECTIONS.Country;
-    expect(direction).toContain("Keep AI music metadata out of the lyrics");
-    expect(direction).toContain("only bracketed labels allowed");
-    expect(direction).toContain("production language exclusively in the STYLE line");
+    expect(direction).toContain("country performance tags throughout the lyrics");
+    expect(direction).toContain("[Pre-Chorus, Pedal steel enters]");
+    expect(direction).toContain("meta tags inside square brackets");
   });
 
   it("makes country lyrics human, conversational, and free of AI-poetry", () => {

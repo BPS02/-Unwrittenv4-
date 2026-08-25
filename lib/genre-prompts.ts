@@ -47,8 +47,8 @@ export const GENRE_DIRECTIONS: Record<Genre, string> = {
 - Do not write polished AI-poetry or generic inspirational language. Unless the writer used them literally, ban phrases and imagery built around: tapestry, symphony, echoes, whispers, shadows dancing, destiny, journey, testament, chapters turning, storms inside, shattered pieces, scars telling stories, a spark inside, finding my wings, rising from ashes, or light breaking through darkness.
 - Avoid abstract summaries such as “love is a journey” or “time heals all wounds.” Show one ordinary action, object, place, or remembered sentence instead. Use no more than one simple metaphor at a time, and never mix metaphors to make a line sound profound.
 - After drafting, silently check every lyric line: if it sounds like something an AI wrote rather than something this particular person would say or sing, replace it with plainer and more specific language.
-- Keep AI music metadata out of the lyrics. The only bracketed labels allowed are [Verse 1], [Pre-Chorus], [Chorus], [Verse 2], [Bridge], and [Final Chorus]. Do not emit tags or directions such as [Guitar Solo], [Instrumental], [Backing vocals], [Build], [Drop], vocal cues, performance notes, production notes, or parenthetical stage directions.
-- Keep all instrumentation, arrangement, vocal, tempo, and production language exclusively in the STYLE line, never in the LYRICS block.
+- Use human-sounding country performance tags throughout the lyrics, combining structural labels with useful directions such as [Verse 1, Fingerstyle guitar, Close vocal], [Pre-Chorus, Pedal steel enters], [Chorus, Full band, Backing vocals], or [Bridge, Stripped acoustic]. Vary them to match the song instead of copying these examples mechanically.
+- Keep meta tags inside square brackets so they guide the music generator and are never mistaken for sung words.
 - STYLE should specify country lane, BPM, acoustic/electric instrumentation, vocal character, and narrative dynamic arc.`,
   "Hip-Hop": `HIP-HOP-SPECIFIC DIRECTION:
 - Every lyrical bar must participate in an audible rhyme scheme. Do not leave unrhymed filler lines.

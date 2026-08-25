@@ -124,7 +124,10 @@ export default function PlaylistsView() {
       return;
     }
     if (activeSongId === song.id && playerRef.current) {
-      if (playerRef.current.paused) void playerRef.current.play();
+      if (playerRef.current.paused) {
+        if (playerRef.current.ended) playerRef.current.currentTime = 0;
+        void playerRef.current.play();
+      }
       else playerRef.current.pause();
       return;
     }
@@ -494,7 +497,10 @@ export default function PlaylistsView() {
         if (playable.length === 0) return;
         const current = playable.findIndex((song) => song.id === activeSongId);
         const next = playable[(current < 0 ? 0 : current + direction + playable.length) % playable.length];
-        if (next) playSong(next);
+        if (next && next.id === activeSongId && playerRef.current) {
+          playerRef.current.currentTime = 0;
+          void playerRef.current.play();
+        } else if (next) playSong(next);
       };
       return (
         <section className="all-songs-page">

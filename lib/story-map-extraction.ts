@@ -2,9 +2,9 @@ import { z } from "zod";
 import type { LyricsRequestParsed } from "./validation";
 import { storyMapObjectSchema, storyMapSchema, type StoryMapV1 } from "./story-map";
 
-export const STORY_EXTRACTOR_PROMPT_VERSION = "story-extractor.v1" as const;
+export const STORY_EXTRACTOR_PROMPT_VERSION = "story-extractor.v2" as const;
 
-export const STORY_EXTRACTOR_SYSTEM_PROMPT = `PROMPT VERSION: story-extractor.v1
+export const STORY_EXTRACTOR_SYSTEM_PROMPT = `PROMPT VERSION: story-extractor.v2
 
 You organize a writer's interview answers into a draft Story Map. You do not write lyrics.
 
@@ -52,6 +52,8 @@ RETURN EXACTLY ONE JSON OBJECT
     { "type": "contradiction", "summary": "plain description", "answer_ids": ["a1", "a2"] }
   ]
 }
+
+flags[].type must be exactly one of: contradiction, missing_context, privacy_review. There are no other flag types. intensity is an integer from 1 to 5.
 
 No Markdown fences, preamble, explanation, lyrics, or advice.`;
 
@@ -101,12 +103,48 @@ export function buildStoryExtractionUserPrompt(req: LyricsRequestParsed): string
 }
 
 export function parseStoryMapExtraction(text: string, storyMapId: string): StoryMapExtractionResult {
-  const parsedJson = JSON.parse(stripJsonFence(text)) as unknown;
+  const parsedJson = normalizeExtractionMechanically(JSON.parse(stripJsonFence(text)) as unknown);
   const raw = rawExtractionSchema.parse(parsedJson);
   const storyMap = storyMapSchema.parse({ ...raw.story_map, story_map_id: storyMapId, status: "draft" });
   assertInterpretationEvidence(storyMap);
   assertFlagEvidence(raw.flags);
   return { promptVersion: STORY_EXTRACTOR_PROMPT_VERSION, storyMap, flags: raw.flags };
+}
+
+/**
+ * Deterministic repairs for the contract drift live extraction actually
+ * produces (seen in Langfuse traces): an intensity outside 1–5, and invented
+ * flag types. Both are normalized, never invented: intensity is clamped into
+ * range, and an unknown flag type becomes `missing_context` — which shows the
+ * flag to the writer without ever weakening the approval gate, because only
+ * the exact type `contradiction` blocks approval and no unknown type is
+ * coerced INTO it.
+ */
+function normalizeExtractionMechanically(value: unknown): unknown {
+  if (!value || typeof value !== "object") return value;
+  const root = value as Record<string, unknown>;
+  const map = root.story_map;
+  if (map && typeof map === "object") {
+    const state = (map as Record<string, unknown>).current_state;
+    if (state && typeof state === "object") {
+      const intensity = (state as Record<string, unknown>).intensity;
+      if (typeof intensity === "number" && Number.isFinite(intensity)) {
+        (state as Record<string, unknown>).intensity = Math.min(5, Math.max(1, Math.round(intensity)));
+      }
+    }
+  }
+  if (Array.isArray(root.flags)) {
+    const allowed = new Set(["contradiction", "missing_context", "privacy_review"]);
+    for (const flag of root.flags) {
+      if (flag && typeof flag === "object") {
+        const type = (flag as Record<string, unknown>).type;
+        if (typeof type === "string" && !allowed.has(type)) {
+          (flag as Record<string, unknown>).type = "missing_context";
+        }
+      }
+    }
+  }
+  return root;
 }
 
 function assertInterpretationEvidence(map: StoryMapV1): void {

@@ -1,13 +1,53 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { OpenRouterError } from "@/lib/openrouter";
-import { generateGroundedSong, groundedFlowEnabled } from "@/lib/grounded-live";
+import { generateGroundedSong, groundedFlowEnabled, type GroundedSongOutcome } from "@/lib/grounded-live";
 import { getStoryMapRecord } from "@/lib/story-maps-store";
 import { checkGenerationRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 // Draft → audit → one repair → audit is up to four model calls.
 export const maxDuration = 300;
+
+/**
+ * Resolves with the first run whose song passed the gate; when none passes,
+ * resolves with the last settled refusal. Rejects only when every run threw.
+ */
+function firstPassingRun(runs: Array<Promise<GroundedSongOutcome>>): Promise<GroundedSongOutcome> {
+  return new Promise((resolve, reject) => {
+    let settled = 0;
+    let done = false;
+    let lastRefusal: GroundedSongOutcome | null = null;
+    let lastError: unknown = null;
+    for (const run of runs) {
+      run
+        .then((outcome) => {
+          if (done) return;
+          if (outcome.passed && outcome.title && outcome.style && outcome.lyrics) {
+            done = true;
+            resolve(outcome);
+            return;
+          }
+          lastRefusal = outcome;
+          settled += 1;
+          if (settled === runs.length) {
+            done = true;
+            resolve(lastRefusal);
+          }
+        })
+        .catch((error: unknown) => {
+          if (done) return;
+          lastError = error;
+          settled += 1;
+          if (settled === runs.length) {
+            done = true;
+            if (lastRefusal) resolve(lastRefusal);
+            else reject(lastError);
+          }
+        });
+    }
+  });
+}
 
 const groundedLyricsRequestSchema = z.object({
   storyMapId: z.string().regex(/^sm_[A-Za-z0-9_-]{4,64}$/),
@@ -52,15 +92,16 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     // The gate refuses roughly half of single runs by design (it rejects
     // rather than inventing), so one refusal is not an error the writer
-    // should see. Run up to two fresh pipeline runs — each keeps its own
-    // one-repair ceiling — and only surface a failure when both refuse.
-    const MAX_PIPELINE_RUNS = 2;
-    let outcome = await generateGroundedSong(record.map, parsed.data.lead);
-    let runs = 1;
-    while ((!outcome.passed || !outcome.title || !outcome.style || !outcome.lyrics) && runs < MAX_PIPELINE_RUNS) {
-      outcome = await generateGroundedSong(record.map, parsed.data.lead);
-      runs += 1;
-    }
+    // should see. Two fresh pipeline runs — each keeping its own one-repair
+    // ceiling — RACE in parallel, and the first one to pass is served, so
+    // the writer waits one run's latency instead of two. Only when both
+    // refuse does the honest failure surface. The doubled lyric-model spend
+    // is small next to the music render this song leads to.
+    const outcome = await firstPassingRun([
+      generateGroundedSong(record.map, parsed.data.lead),
+      generateGroundedSong(record.map, parsed.data.lead),
+    ]);
+    const runs = 2;
     if (!outcome.passed || !outcome.title || !outcome.style || !outcome.lyrics) {
       // The gate refused rather than invent. Honest failure, retryable.
       return NextResponse.json(

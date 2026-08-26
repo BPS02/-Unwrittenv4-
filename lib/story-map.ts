@@ -8,8 +8,7 @@ const shortText = (maxWords: number) =>
     `Must be "none" or ${maxWords} words or fewer.`
   );
 
-export const storyMapSchema = z
-  .object({
+export const storyMapObjectSchema = z.object({
     schema_version: z.literal(STORY_MAP_SCHEMA_VERSION),
     story_map_id: z.string().regex(/^sm_[A-Za-z0-9_-]+$/),
     status: z.enum(["draft", "approved"]),
@@ -57,8 +56,9 @@ export const storyMapSchema = z
       )
       .max(12)
       .optional(),
-  })
-  .superRefine((map, ctx) => {
+  });
+
+export const storyMapSchema = storyMapObjectSchema.superRefine((map, ctx) => {
     if (map.narrative_weight.past + map.narrative_weight.present !== 100) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

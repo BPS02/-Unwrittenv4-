@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { SONGWRITING_CORE_PROMPT, SONGWRITING_CORE_VERSION } from "@/lib/songwriting-core";
 
-describe("core.v1", () => {
+describe("core.v3", () => {
   it("is explicitly versioned and owns the universal output contract", () => {
-    expect(SONGWRITING_CORE_VERSION).toBe("core.v1");
+    expect(SONGWRITING_CORE_VERSION).toBe("core.v3");
     expect(SONGWRITING_CORE_PROMPT).toContain("TITLE, STYLE, and LYRICS");
     expect(SONGWRITING_CORE_PROMPT).toContain("must-not-use");
     expect(SONGWRITING_CORE_PROMPT).toContain("Never invent an event");
+    expect(SONGWRITING_CORE_PROMPT).toContain("never print analysis");
+    expect(SONGWRITING_CORE_PROMPT).toContain("directly paraphrasable");
     expect(SONGWRITING_CORE_PROMPT).toContain("living artist");
   });
 

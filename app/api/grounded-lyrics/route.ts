@@ -50,7 +50,17 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const outcome = await generateGroundedSong(record.map, parsed.data.lead);
+    // The gate refuses roughly half of single runs by design (it rejects
+    // rather than inventing), so one refusal is not an error the writer
+    // should see. Run up to two fresh pipeline runs — each keeps its own
+    // one-repair ceiling — and only surface a failure when both refuse.
+    const MAX_PIPELINE_RUNS = 2;
+    let outcome = await generateGroundedSong(record.map, parsed.data.lead);
+    let runs = 1;
+    while ((!outcome.passed || !outcome.title || !outcome.style || !outcome.lyrics) && runs < MAX_PIPELINE_RUNS) {
+      outcome = await generateGroundedSong(record.map, parsed.data.lead);
+      runs += 1;
+    }
     if (!outcome.passed || !outcome.title || !outcome.style || !outcome.lyrics) {
       // The gate refused rather than invent. Honest failure, retryable.
       return NextResponse.json(
@@ -58,7 +68,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           error:
             "The song didn’t pass our accuracy check against your approved story, so we didn’t keep it. Try again — every attempt is written fresh.",
           code: "GROUNDING_FAILED",
-          grounded: { passed: false, repaired: outcome.report.repaired },
+          grounded: { passed: false, repaired: outcome.report.repaired, runs },
         },
         { status: 502 }
       );
@@ -74,6 +84,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         repaired: outcome.report.repaired,
         pipeline: outcome.report.version,
         storyMapId: record.id,
+        runs,
       },
     });
   } catch (err) {

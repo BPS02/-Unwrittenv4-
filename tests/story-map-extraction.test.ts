@@ -72,6 +72,22 @@ describe("story-extractor.v2", () => {
     expect(parseStoryMapExtraction(JSON.stringify(low), "sm_clamped_low").storyMap.current_state.intensity).toBe(1);
   });
 
+  it("drops interpretation entries for fact fields and keeps the real interpretive ones", () => {
+    // Live traces showed the extractor annotating central_memory as an
+    // interpretation, which the contract forbids.
+    const annotated = structuredClone(draft);
+    annotated.story_map.interpretations = [
+      ...annotated.story_map.interpretations,
+      { field: "building_blocks.central_memory", basis: ["a1"], confidence: "high" },
+    ] as typeof annotated.story_map.interpretations;
+    const result = parseStoryMapExtraction(JSON.stringify(annotated), "sm_fact_annotation");
+    expect(result.storyMap.interpretations?.map((entry) => entry.field)).toEqual([
+      "building_blocks.what_went_unsaid",
+      "building_blocks.change_over_time",
+      "building_blocks.chorus_message",
+    ]);
+  });
+
   it("normalizes an invented flag type to missing_context without touching contradictions", () => {
     const flagged = {
       ...structuredClone(draft),

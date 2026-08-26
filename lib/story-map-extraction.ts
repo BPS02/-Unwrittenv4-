@@ -53,7 +53,7 @@ RETURN EXACTLY ONE JSON OBJECT
   ]
 }
 
-flags[].type must be exactly one of: contradiction, missing_context, privacy_review. There are no other flag types. intensity is an integer from 1 to 5.
+flags[].type must be exactly one of: contradiction, missing_context, privacy_review. There are no other flag types. intensity is an integer from 1 to 5. interpretations[].field must be exactly one of: building_blocks.what_went_unsaid, building_blocks.change_over_time, building_blocks.chorus_message — never a fact field.
 
 No Markdown fences, preamble, explanation, lyrics, or advice.`;
 
@@ -131,6 +131,28 @@ function normalizeExtractionMechanically(value: unknown): unknown {
       if (typeof intensity === "number" && Number.isFinite(intensity)) {
         (state as Record<string, unknown>).intensity = Math.min(5, Math.max(1, Math.round(intensity)));
       }
+    }
+  }
+  if (map && typeof map === "object") {
+    const interpretations = (map as Record<string, unknown>).interpretations;
+    if (Array.isArray(interpretations)) {
+      // Live traces showed interpretation entries for FACT fields (e.g.
+      // central_memory). Those annotations are meaningless in the contract —
+      // only the three interpretive fields carry evidence — so invalid
+      // entries are dropped. No story content is touched, and the evidence
+      // assertions for the real interpretive fields still run unweakened.
+      const allowedFields = new Set([
+        "building_blocks.what_went_unsaid",
+        "building_blocks.change_over_time",
+        "building_blocks.chorus_message",
+      ]);
+      (map as Record<string, unknown>).interpretations = interpretations.filter(
+        (entry) =>
+          entry &&
+          typeof entry === "object" &&
+          typeof (entry as Record<string, unknown>).field === "string" &&
+          allowedFields.has((entry as Record<string, unknown>).field as string)
+      );
     }
   }
   if (Array.isArray(root.flags)) {

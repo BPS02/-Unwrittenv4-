@@ -29,34 +29,58 @@ const INTERPRETIVE_FIELDS = [
 
 export default function StoryMapReview(props: StoryMapReviewProps) {
   const [privateText, setPrivateText] = useState(props.draft.must_not_use.join("\n"));
+  /** Validation problems must be VISIBLE — a thrown schema error inside an
+   *  event handler reads as a dead button, which is worse than any message. */
+  const [problem, setProblem] = useState<string | null>(null);
   const contradictions = props.flags.filter((flag) => flag.type === "contradiction");
   const interpretationByField = useMemo(
     () => new Map((props.draft.interpretations ?? []).map((item) => [item.field, item])),
     [props.draft.interpretations]
   );
 
+  function friendly(error: unknown, fallback: string): string {
+    if (error instanceof Error && !error.name.includes("Zod")) return error.message;
+    return fallback;
+  }
+
   function changeField(field: keyof StoryMapV1["building_blocks"], value: string) {
-    props.onChange(updateStoryMapText(props.draft, field, value));
+    try {
+      props.onChange(updateStoryMapText(props.draft, field, value));
+      setProblem(null);
+    } catch (error) {
+      setProblem(friendly(error, "That detail is too long — keep it under 40 words."));
+    }
   }
 
   function changePrivacy(names: boolean, places: boolean, text = privateText) {
-    props.onChange(updateStoryMapPrivacy(props.draft, {
-      names,
-      places,
-      mustNotUse: text.split("\n"),
-    }));
+    try {
+      props.onChange(updateStoryMapPrivacy(props.draft, {
+        names,
+        places,
+        mustNotUse: text.split("\n"),
+      }));
+      setProblem(null);
+    } catch (error) {
+      setProblem(
+        friendly(error, "One private detail conflicts with a phrase you asked us to keep — remove one of them.")
+      );
+    }
   }
 
   function approve() {
-    changePrivacy(props.draft.permissions.names, props.draft.permissions.places);
-    props.onApprove(approveStoryMap(
-      updateStoryMapPrivacy(props.draft, {
-        names: props.draft.permissions.names,
-        places: props.draft.permissions.places,
-        mustNotUse: privateText.split("\n"),
-      }),
-      props.flags
-    ));
+    try {
+      props.onApprove(approveStoryMap(
+        updateStoryMapPrivacy(props.draft, {
+          names: props.draft.permissions.names,
+          places: props.draft.permissions.places,
+          mustNotUse: privateText.split("\n"),
+        }),
+        props.flags
+      ));
+      setProblem(null);
+    } catch (error) {
+      setProblem(friendly(error, "One of the edited fields isn’t valid — shorten it and try again."));
+    }
   }
 
   return (
@@ -129,6 +153,7 @@ export default function StoryMapReview(props: StoryMapReviewProps) {
         <button type="button" className="btn btn-secondary" onClick={props.onBack}>← Back to questions</button>
         <button type="button" className="btn btn-primary" disabled={contradictions.length > 0} onClick={approve}>Approve my Story Map →</button>
         {contradictions.length > 0 && <p>Clear up the conflicting answers before approving.</p>}
+        {problem && <p role="alert" className="story-map-review-problem">{problem}</p>}
       </div>
     </div>
   );

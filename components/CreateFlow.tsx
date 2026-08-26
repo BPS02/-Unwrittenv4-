@@ -965,6 +965,12 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
           />
         )}
 
+        {step === "questions" && groundedFlow && review && reviewStatus === "loading" && (
+          <p role="status" className="start-notice">Approving your story…</p>
+        )}
+        {step === "questions" && groundedFlow && review && reviewStatus === "error" && reviewError && (
+          <p role="alert" className="start-notice">{reviewError}</p>
+        )}
         {step === "questions" && groundedFlow && review && (
           <StoryMapReview
             draft={review.draft}

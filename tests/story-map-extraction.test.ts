@@ -72,6 +72,17 @@ describe("story-extractor.v2", () => {
     expect(parseStoryMapExtraction(JSON.stringify(low), "sm_clamped_low").storyMap.current_state.intensity).toBe(1);
   });
 
+  it("truncates over-cap text fields and rebalances narrative weights instead of failing", () => {
+    const drifted = structuredClone(draft);
+    drifted.story_map.emotional_register = "warm and grateful";
+    drifted.story_map.building_blocks.central_memory = Array.from({ length: 45 }, (_, i) => `word${i}`).join(" ");
+    drifted.story_map.narrative_weight = { past: 60, present: 30 };
+    const result = parseStoryMapExtraction(JSON.stringify(drifted), "sm_caps");
+    expect(result.storyMap.emotional_register).toBe("warm and");
+    expect(result.storyMap.building_blocks.central_memory.split(" ")).toHaveLength(40);
+    expect(result.storyMap.narrative_weight).toEqual({ past: 60, present: 40 });
+  });
+
   it("drops interpretation entries for fact fields and keeps the real interpretive ones", () => {
     // Live traces showed the extractor annotating central_memory as an
     // interpretation, which the contract forbids.

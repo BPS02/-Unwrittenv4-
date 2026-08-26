@@ -131,6 +131,27 @@ function normalizeExtractionMechanically(value: unknown): unknown {
       if (typeof intensity === "number" && Number.isFinite(intensity)) {
         (state as Record<string, unknown>).intensity = Math.min(5, Math.max(1, Math.round(intensity)));
       }
+      truncateWords(state as Record<string, unknown>, "feeling", 8);
+    }
+    // Word caps the model routinely brushes against. Truncation keeps the
+    // model's own summary language, just bounded — never invented content.
+    truncateWords(map as Record<string, unknown>, "relevant_past", 100);
+    truncateWords(map as Record<string, unknown>, "emotional_register", 2);
+    const blocks = (map as Record<string, unknown>).building_blocks;
+    if (blocks && typeof blocks === "object") {
+      for (const field of Object.keys(blocks as Record<string, unknown>)) {
+        truncateWords(blocks as Record<string, unknown>, field, 40);
+      }
+    }
+    // Past and present must total exactly 100; rebalance present rather than
+    // failing the whole extraction over arithmetic drift.
+    const weight = (map as Record<string, unknown>).narrative_weight;
+    if (weight && typeof weight === "object") {
+      const w = weight as Record<string, unknown>;
+      if (typeof w.past === "number" && Number.isFinite(w.past)) {
+        w.past = Math.min(100, Math.max(0, Math.round(w.past)));
+        w.present = 100 - (w.past as number);
+      }
     }
   }
   if (map && typeof map === "object") {
@@ -167,6 +188,14 @@ function normalizeExtractionMechanically(value: unknown): unknown {
     }
   }
   return root;
+}
+
+/** Bounds one text field to the schema's word cap, keeping whole words. */
+function truncateWords(holder: Record<string, unknown>, field: string, maxWords: number): void {
+  const value = holder[field];
+  if (typeof value !== "string" || value === "none") return;
+  const words = value.trim().split(/\s+/).filter(Boolean);
+  if (words.length > maxWords) holder[field] = words.slice(0, maxWords).join(" ");
 }
 
 function assertInterpretationEvidence(map: StoryMapV1): void {

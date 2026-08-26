@@ -97,12 +97,28 @@ export async function POST(request: Request): Promise<NextResponse> {
     // the writer waits one run's latency instead of two. Only when both
     // refuse does the honest failure surface. The doubled lyric-model spend
     // is small next to the music render this song leads to.
-    const outcome = await firstPassingRun([
-      generateGroundedSong(record.map, parsed.data.lead),
-      generateGroundedSong(record.map, parsed.data.lead),
-    ]);
-    const runs = 2;
+    const RACE_SIZE = 3;
+    const outcome = await firstPassingRun(
+      Array.from({ length: RACE_SIZE }, () => generateGroundedSong(record.map, parsed.data.lead))
+    );
+    const runs = RACE_SIZE;
     if (!outcome.passed || !outcome.title || !outcome.style || !outcome.lyrics) {
+      // Make every refusal diagnosable from the deployment logs: which
+      // checks failed and which claims the auditor still flags. Flags quote
+      // the writer's own story content, which these logs already handle
+      // (the extraction/draft prompts flow through the same infrastructure).
+      const finalAttempt = outcome.report.attempts.at(-1);
+      console.error(
+        "[api/grounded-lyrics] gate refused",
+        JSON.stringify({
+          storyMapId: record.id,
+          mechanical: finalAttempt?.mechanical.checks.filter((check) => !check.passed).map((check) => check.id),
+          remainingFlags: finalAttempt?.reconciliation?.inventionFlags.map((flag) => ({
+            claim: flag.claim,
+            excerpt: flag.lyric_excerpt,
+          })),
+        })
+      );
       // The gate refused rather than invent. Honest failure, retryable.
       return NextResponse.json(
         {

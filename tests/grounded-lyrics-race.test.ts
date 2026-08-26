@@ -35,7 +35,7 @@ function outcome(passed: boolean, title = "Raced Song"): GroundedSongOutcome {
     style: passed ? "Acoustic folk; 82 BPM, G major; end on one chord." : null,
     lyrics: passed ? "[Verse 1]\nA raced line" : null,
     model: "mock-model",
-    report: { repaired: false, version: "grounded-pipeline.v13" } as GroundedSongOutcome["report"],
+    report: { repaired: false, version: "grounded-pipeline.v13", attempts: [] } as unknown as GroundedSongOutcome["report"],
   };
 }
 
@@ -61,8 +61,9 @@ beforeEach(() => {
 });
 
 describe("grounded lyrics race", () => {
-  it("serves the passing run even when the other run refuses first", async () => {
+  it("serves the passing run even when the other runs refuse", async () => {
     mocked
+      .mockResolvedValueOnce(outcome(false))
       .mockResolvedValueOnce(outcome(false))
       .mockImplementationOnce(
         () => new Promise((resolve) => setTimeout(() => resolve(outcome(true)), 25))
@@ -73,40 +74,41 @@ describe("grounded lyrics race", () => {
     const data = (await res.json()) as { title: string; grounded: { passed: boolean } };
     expect(data.title).toBe("Raced Song");
     expect(data.grounded.passed).toBe(true);
-    expect(mocked).toHaveBeenCalledTimes(2);
+    expect(mocked).toHaveBeenCalledTimes(3);
   });
 
-  it("does not wait for the slower run once one has passed", async () => {
+  it("does not wait for the slower runs once one has passed", async () => {
     let slowSettled = false;
-    mocked
-      .mockResolvedValueOnce(outcome(true))
-      .mockImplementationOnce(
-        () =>
-          new Promise((resolve) =>
-            setTimeout(() => {
-              slowSettled = true;
-              resolve(outcome(false));
-            }, 5_000)
-          )
+    const slow = () =>
+      new Promise<GroundedSongOutcome>((resolve) =>
+        setTimeout(() => {
+          slowSettled = true;
+          resolve(outcome(false));
+        }, 5_000)
       );
+    mocked.mockResolvedValueOnce(outcome(true)).mockImplementationOnce(slow).mockImplementationOnce(slow);
     const { POST } = await import("@/app/api/grounded-lyrics/route");
     const res = await POST(request(await approvedId("sm_race_fast")));
     expect(res.status).toBe(200);
     expect(slowSettled).toBe(false);
   });
 
-  it("surfaces the honest refusal only when both runs refuse", async () => {
-    mocked.mockResolvedValueOnce(outcome(false)).mockResolvedValueOnce(outcome(false));
+  it("surfaces the honest refusal only when every run refuses", async () => {
+    mocked
+      .mockResolvedValueOnce(outcome(false))
+      .mockResolvedValueOnce(outcome(false))
+      .mockResolvedValueOnce(outcome(false));
     const { POST } = await import("@/app/api/grounded-lyrics/route");
     const res = await POST(request(await approvedId("sm_race_fail")));
     expect(res.status).toBe(502);
     const data = (await res.json()) as { code: string; grounded: { runs: number } };
     expect(data.code).toBe("GROUNDING_FAILED");
-    expect(data.grounded.runs).toBe(2);
+    expect(data.grounded.runs).toBe(3);
   });
 
-  it("still serves a refusal verdict when the other run threw", async () => {
+  it("still serves a refusal verdict when another run threw", async () => {
     mocked
+      .mockRejectedValueOnce(new Error("provider hiccup"))
       .mockRejectedValueOnce(new Error("provider hiccup"))
       .mockResolvedValueOnce(outcome(false));
     const { POST } = await import("@/app/api/grounded-lyrics/route");

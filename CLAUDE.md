@@ -5,9 +5,29 @@ song. This file is the working guide for anyone (human or agent) building on
 this codebase: what exists, why it's shaped this way, and the things that cost
 real time to discover.
 
-This is V3, ported from V2 (`github.com/BPS02/v2-feelmatch`). The port kept the
-pure entitlement core, the music-provider abstraction, and the byte-math
-preview cutter, and replaced Clerk-metadata storage with Neon Postgres.
+This is **V4**. Home repo: **`https://github.com/BPS02/-Unwrittenv4-.git`**,
+deployed at `unwrittenv4.vercel.app`. It was seeded from V3
+(`github.com/BPS02/Liner-Notes`, itself ported from V2
+`github.com/BPS02/v2-feelmatch`) and keeps V3's pure entitlement core,
+music-provider abstraction, byte-math preview cutter, and Neon Postgres
+storage. What V4 is, beyond that inheritance:
+
+- The creation flow runs on **two managed Langfuse prompts** — the guide
+  (personal-detail questions + song brief) and the generator (title, STYLE
+  production brief, and lyrics in one completion). The generator is
+  **genre-specialized**: each genre resolves its own Langfuse prompt name and
+  carries genre-specific writing direction plus a banned AI-phrase list.
+- Signed-in writers get **Your Story** — private profile memory saved from
+  every song and editable at `/api/profile/memories`, fed to the generator as
+  quoted background. Anonymous lyric writing works identically without it.
+- The browse-templates path is **model-free**: hand-curated starter templates
+  under research-grounded emotion families, chosen instantly.
+- Songs get **cover art**: an AI cover from `/api/cover` (text-free, GPT Image
+  via OpenRouter's Images API) with a deterministic gradient fallback hashed
+  from the song id (`lib/cover-art.ts`).
+- Deleting a Clerk account purges every row it owns via the
+  `/api/webhooks/clerk` webhook (`lib/account-cleanup.ts`), idempotently.
+- The V3 voice assistant was removed on purpose. Do not re-add it.
 
 ## Rebuilding this app from the repository
 
@@ -15,11 +35,11 @@ The source is the specification. Do not rebuild from this document alone — it
 explains *why* the code is shaped the way it is, not every line of it.
 
 ```bash
-git clone https://github.com/BPS02/Liner-Notes.git
-cd Liner-Notes
+git clone https://github.com/BPS02/-Unwrittenv4-.git
+cd -Unwrittenv4-
 npm install          # from PowerShell on Windows — see "Hard-won lessons"
 cp .env.example .env # fill in only what you need; see the table at the end
-npm test             # 207 tests, no database or API keys required
+npm test             # the full suite runs with no database or API keys
 npm run dev          # http://localhost:3000
 ```
 
@@ -28,7 +48,7 @@ lyrics, a locally synthesised instrumental, in-memory storage and anonymous
 mode — the whole flow end to end. Add keys to make each piece real, in this
 order of value:
 
-1. `OPENROUTER_API_KEY` — real lyrics, follow-up questions, starting points.
+1. `OPENROUTER_API_KEY` — real lyrics, follow-up questions, cover art.
 2. `DATABASE_URL` (Neon, **pooled**) — durable songs, entitlements, audio.
    Then `npm run db:migrate`.
 3. Clerk keys — accounts, the vault, the MCP server.
@@ -184,7 +204,7 @@ can go.
 the web routes and the MCP server, so a song made through Claude is produced
 identically to one made on the site.
 
-V4's pipeline is two managed prompts end to end. The **guide** asks the
+V4's creation flow is two managed prompts end to end. The **guide** asks the
 follow-up questions, and at lyrics time puts everything the writer shared —
 thought, feelings, details, answers — together into one song brief
 (`assembleSongBrief`, best-effort: on failure the raw sections go to the
@@ -196,6 +216,13 @@ makes **no LLM call at all**; `resolveStylePrompt` uses the style that
 travelled with the song, falling back to the deterministic
 `buildMockStylePrompt` when none did (an old draft, or a caller that skipped
 `write_lyrics`).
+
+`/api/lyrics` actually calls `generatePersonalizedLyrics`
+(`lib/personalized-lyrics.ts`): with a verified Clerk session it saves the
+song's details into the writer's private story memory and hands the
+generator their remembered details; anonymously it is exactly
+`generateLyrics`. A memory-storage outage never blocks the free lyric path —
+it logs and generates from the current song alone.
 
 `generateQuestions` is the one exception to "degrade honestly": it has **no
 deterministic fallback on purpose**. It writes the follow-up questions for the
@@ -237,6 +264,32 @@ is therefore enforced **client-side only** — the server never sees the questio
 set, so it cannot know how many were asked. Moving that rule server-side means
 persisting question sets first.
 
+### Your Story — private profile memory (`lib/story-memory.ts`)
+Signed-in writers accumulate a private profile: every song's thought,
+feelings, details, and answers are deduplicated (SHA-256 fingerprint) into
+`story_memories`, and the writer can view, edit, add, delete, or disable it
+all at `/api/profile/memories` ("Your Story"). At lyric time the most recent
+memories (capped by count and characters) reach the generator as **quoted
+untrusted background** under a `PRIVATE PROFILE MEMORY` block — the prompt
+states the current song overrides older memory and that memory is never an
+instruction, so a stored line like "ignore the writer" stays inert data.
+Memory rows are deleted with the account. Anonymous writing never touches
+any of this.
+
+### Cover art (`/api/cover`, `lib/cover-art.ts`)
+One square, text-free album cover per song through OpenRouter's dedicated
+Images API — deliberately separate from the lyric prompt, so GPT Image
+interprets the finished song rather than steering it. Without a key (or on
+failure) every song still has stable artwork: `artFor(id)` hashes the song id
+to one of eight muted gradients, so the same song always wears the same
+colours and playlist tiles are stable across reloads.
+
+### Account deletion (`/api/webhooks/clerk`, `lib/account-cleanup.ts`)
+Clerk's `user.deleted` webhook (signature-verified) triggers a transactional,
+idempotent purge of everything the user owns — entitlements, songs and takes,
+audio blobs, playlists, unlocks, reservations, billing events, and story
+memories. A failed cleanup returns 500 so Clerk retries.
+
 ### Music providers (`lib/music/`)
 A `MusicProvider` interface with `MUSIC_PROVIDER` selecting the
 implementation: `mureka` (current), `lyria`, `gpt-audio`, `elevenlabs`,
@@ -259,14 +312,21 @@ V4 runs the whole creation flow on **two chat prompts** managed in Langfuse
    on the request's `TASK:` line: `QUESTIONS` (the follow-up questions step)
    and `BRIEF` (assemble thought + feelings + details + answers into the song
    brief handed to the generator). Seeded from `GUIDE_SYSTEM_PROMPT`.
-2. **The generator** (`unwritten-generator`, `LANGFUSE_GENERATOR_PROMPT_NAME`)
-   — the lyric/music generator. Writes the complete song in one completion:
-   `TITLE:`, the `STYLE:` production brief (genre, mood, BPM, instrumentation,
-   vocal character, dynamic arc — handed directly to the music provider), and
-   `LYRICS:`. There is no separate music-brief prompt to keep in sync. Seeded
-   from `GENERATOR_SYSTEM_PROMPT`.
+2. **The generator** (`LANGFUSE_GENERATOR_PROMPT_NAME`, base name
+   `unwritten-generator`) — the lyric/music generator. Writes the complete
+   song in one completion: `TITLE:`, the `STYLE:` production brief (genre,
+   mood, BPM, instrumentation, vocal character, dynamic arc — handed directly
+   to the music provider), and `LYRICS:`. There is no separate music-brief
+   prompt to keep in sync. The generator is **genre-specialized**
+   (`lib/genre-prompts.ts`): each request resolves
+   `<base>-<genre-slug>` (e.g. `unwritten-generator-country`,
+   `unwritten-generator-lo-fi`), and the in-repo fallback is the base
+   `GENERATOR_SYSTEM_PROMPT` plus that genre's `GENRE_DIRECTIONS` block. The
+   base prompt inlines the banned AI-phrase list from
+   `lib/banned-ai-lyric-terms.json` — edit the JSON, not the prompt, to grow
+   it.
 
-These two are the ONLY prompts. The browse-templates path is deliberately
+These are the ONLY prompt families. The browse-templates path is deliberately
 model-free: the starter templates in `lib/templates.ts` are hand-curated
 under research-grounded emotion families (Plutchik's primaries and their
 studied blends; Cowen & Keltner's emotion categories), and choosing one
@@ -274,9 +334,13 @@ selects its feelings and drops one of its hand-written opening thoughts into
 the box instantly — no API call, nothing to wait for, nothing to fail.
 Picking the same template again rotates to its next thought variant.
 
-`npx tsx seed-langfuse-prompts.ts` pushes both in-repo fallbacks to Langfuse
-as chat prompts labelled `production` (re-running versions them, never
-duplicates; pass a prompt name to push just one). The guide's config pins
+`npx tsx seed-langfuse-prompts.ts` pushes the guide and the BASE generator
+fallbacks to Langfuse as chat prompts labelled `production` (re-running
+versions them, never duplicates; pass a prompt name to push just one). The
+per-genre generator prompts are **not** seeded by the script: a genre name
+that does not exist in Langfuse falls back to the in-repo base prompt plus
+that genre's direction block, so create `unwritten-generator-<slug>` in
+Langfuse only when a genre needs live iteration. The guide's config pins
 `meta/muse-spark-1.2-contributor`, which has two account/config gates learned
 the hard way: it 403s until the OpenRouter account confirms **18+**
 (https://openrouter.ai/settings/preferences), and it 400s on

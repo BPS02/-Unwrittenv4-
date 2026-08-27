@@ -288,26 +288,6 @@ export const billingEvents = pgTable("billing_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/**
- * Story Maps for the grounded songwriting flow. A draft is created by the
- * extraction route, edited and approved by the writer on the review screen,
- * and only an approved map may feed grounded generation — the pipeline
- * independently re-asserts approved status. The UUID id is the capability:
- * the flow works anonymously, so possession of the unguessable id is the
- * same trust level as a client-generated songId.
- */
-export const storyMaps = pgTable("story_maps", {
-  /** Server-generated `sm_<uuid>` — the story_map.v1 id format. */
-  id: text("id").primaryKey(),
-  status: text("status", { enum: ["draft", "approved"] }).notNull().default("draft"),
-  /** The story_map.v1 object, validated on every read and write. */
-  map: jsonb("map").notNull(),
-  /** Extraction flags still unresolved (story-extractor.v1 shape). */
-  flags: jsonb("flags").notNull().default([]),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
 export type EntitlementRow = typeof entitlements.$inferSelect;
 export type SongRow = typeof songs.$inferSelect;
 export type TakeRow = typeof takes.$inferSelect;

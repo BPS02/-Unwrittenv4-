@@ -196,10 +196,7 @@ describe("GENERATOR_SYSTEM_PROMPT", () => {
     expect(GENERATOR_SYSTEM_PROMPT).toContain("Format lyrics for ElevenLabs Music v2");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("Square brackets contain only structural section names");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("Use curly braces only for a short event");
-    expect(GENERATOR_SYSTEM_PROMPT).toContain("PERSONALIZE THE STYLE BRIEF");
-    expect(GENERATOR_SYSTEM_PROMPT).toContain("90 words maximum");
-    expect(GENERATOR_SYSTEM_PROMPT).toContain("required STYLE slots in this exact order");
-    expect(GENERATOR_SYSTEM_PROMPT).toContain("no proper nouns, names, dates, places");
+    expect(GENERATOR_SYSTEM_PROMPT).toContain("no robotic phrasing");
     expect(GENERATOR_SYSTEM_PROMPT).toContain("BANNED AI-SOUNDING WORDS AND PHRASES");
     for (const term of bannedAiLyricTerms) expect(GENERATOR_SYSTEM_PROMPT).toContain(term);
   });

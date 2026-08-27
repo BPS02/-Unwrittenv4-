@@ -5,19 +5,9 @@ song. This file is the working guide for anyone (human or agent) building on
 this codebase: what exists, why it's shaped this way, and the things that cost
 real time to discover.
 
-This is **V4**, home repo `github.com/BPS02/-Unwrittenv4-`, deployed at
-`unwrittenv4.vercel.app`. It was seeded from V3 (`github.com/BPS02/Liner-Notes`,
-itself ported from V2 `github.com/BPS02/v2-feelmatch`) and keeps V3's pure
-entitlement core, music-provider abstraction, byte-math preview cutter, and
-Neon Postgres storage. What V4 changed:
-
-- The creation flow runs on **two managed Langfuse prompts** — the guide
-  (personal-detail questions + song brief) and the generator (title, STYLE
-  production brief, and lyrics in one completion). V3's separate music-brief
-  prompt is gone; the STYLE line travels with the lyrics to the render.
-- The browse-templates path is **model-free**: hand-curated starter templates
-  under research-grounded emotion families, chosen instantly.
-- The V3 voice assistant was removed on purpose. Do not re-add it.
+This is V3, ported from V2 (`github.com/BPS02/v2-feelmatch`). The port kept the
+pure entitlement core, the music-provider abstraction, and the byte-math
+preview cutter, and replaced Clerk-metadata storage with Neon Postgres.
 
 ## Rebuilding this app from the repository
 
@@ -25,11 +15,11 @@ The source is the specification. Do not rebuild from this document alone — it
 explains *why* the code is shaped the way it is, not every line of it.
 
 ```bash
-git clone https://github.com/BPS02/-Unwrittenv4-.git
-cd -Unwrittenv4-
+git clone https://github.com/BPS02/Liner-Notes.git
+cd Liner-Notes
 npm install          # from PowerShell on Windows — see "Hard-won lessons"
 cp .env.example .env # fill in only what you need; see the table at the end
-npm test             # 350+ tests, no database or API keys required
+npm test             # 207 tests, no database or API keys required
 npm run dev          # http://localhost:3000
 ```
 
@@ -38,7 +28,7 @@ lyrics, a locally synthesised instrumental, in-memory storage and anonymous
 mode — the whole flow end to end. Add keys to make each piece real, in this
 order of value:
 
-1. `OPENROUTER_API_KEY` — real lyrics and follow-up questions.
+1. `OPENROUTER_API_KEY` — real lyrics, follow-up questions, starting points.
 2. `DATABASE_URL` (Neon, **pooled**) — durable songs, entitlements, audio.
    Then `npm run db:migrate`.
 3. Clerk keys — accounts, the vault, the MCP server.

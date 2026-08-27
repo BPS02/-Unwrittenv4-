@@ -25,9 +25,6 @@ import Stepper, { STEP_ORDER, type FlowStep } from "./Stepper";
 import WriteStep, { type WriteMode } from "./WriteStep";
 import ShapeStep from "./ShapeStep";
 import QuestionsStep, { type QuestionsStatus } from "./QuestionsStep";
-import StoryMapReview from "./StoryMapReview";
-import type { StoryMapV1 } from "@/lib/story-map";
-import type { StoryMapExtractionFlag } from "@/lib/story-map-extraction";
 import LyricsStep, { type SongDraft } from "./LyricsStep";
 import { lyricsForReading } from "@/lib/lyrics-display";
 import MusicStep, {
@@ -124,20 +121,6 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
   const [missingAnswers, setMissingAnswers] = useState<string[]>([]);
 
   const [song, setSong] = useState<SongDraft | null>(null);
-
-  // ── Grounded flow (feature-flagged; the classic flow is untouched when off) ─
-  const groundedFlow = process.env.NEXT_PUBLIC_GROUNDED_FLOW === "1";
-  /** The extracted draft under review, with each flag's original server index. */
-  const [review, setReview] = useState<{
-    storyMapId: string;
-    draft: StoryMapV1;
-    flags: Array<{ flag: StoryMapExtractionFlag; originalIndex: number }>;
-    resolvedIndexes: number[];
-  } | null>(null);
-  const [reviewStatus, setReviewStatus] = useState<"idle" | "loading" | "error">("idle");
-  const [reviewError, setReviewError] = useState<string | null>(null);
-  /** Set once a story is approved, so retries and new takes stay grounded. */
-  const [groundedStoryMapId, setGroundedStoryMapId] = useState<string | null>(null);
   const [coverArt, setCoverArt] = useState<string | null>(null);
   const [lyricsStatus, setLyricsStatus] = useState<"loading" | "error" | "ready">("ready");
   const [lyricsError, setLyricsError] = useState<string | null>(null);
@@ -417,12 +400,7 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
       const collected: QuestionAnswer[] = collectAnswers(questions, answers);
       const nextInput: SongInput = { ...input, answers: collected };
       setInput(nextInput);
-      if (groundedFlow) {
-        goTo("questions");
-        void startStoryReview(nextInput);
-      } else {
-        void generateLyrics(variation, nextInput);
-      }
+      void generateLyrics(variation, nextInput);
       return;
     }
 
@@ -443,105 +421,6 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
     setAnswers((prev) => ({ ...prev, [id]: value }));
     setMissingAnswers((prev) => (value.trim() ? prev.filter((q) => q !== id) : prev));
   };
-
-  // ── Grounded flow: extract → review → approve → grounded song ─────────
-  const startStoryReview = useCallback(
-    async (payloadInput: SongInput) => {
-      setReviewStatus("loading");
-      setReviewError(null);
-      try {
-        const res = await fetch("/api/story-map", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-LinerNotes-Device": deviceToken() },
-          body: JSON.stringify({ input: payloadInput, controls, variation: 0 }),
-        });
-        const data: unknown = await res.json().catch(() => null);
-        if (!res.ok) {
-          throw new Error(errorMessageFrom(data, "We couldn’t put your story together just now."));
-        }
-        const result = data as {
-          storyMapId: string;
-          storyMap: StoryMapV1;
-          flags: StoryMapExtractionFlag[];
-        };
-        setReview({
-          storyMapId: result.storyMapId,
-          draft: result.storyMap,
-          flags: result.flags.map((flag, originalIndex) => ({ flag, originalIndex })),
-          resolvedIndexes: [],
-        });
-        setReviewStatus("idle");
-      } catch (err) {
-        setReviewError(err instanceof Error ? err.message : "Something went wrong.");
-        setReviewStatus("error");
-      }
-    },
-    [controls]
-  );
-
-  const generateGroundedLyrics = useCallback(async (storyMapId: string) => {
-    goTo("lyrics");
-    setLyricsStatus("loading");
-    setLyricsError(null);
-    setMusic(null);
-    setTakes([]);
-    setMusicStatus("idle");
-    try {
-      const res = await fetch("/api/grounded-lyrics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-LinerNotes-Device": deviceToken() },
-        body: JSON.stringify({ storyMapId }),
-      });
-      const data: unknown = await res.json().catch(() => null);
-      if (!res.ok) {
-        throw new Error(errorMessageFrom(data, "Something went wrong while writing your song."));
-      }
-      const result = data as SongDraft;
-      setSong({
-        title: result.title,
-        lyrics: result.lyrics,
-        mode: result.mode,
-        style: result.style,
-        model: result.model,
-      });
-      setLyricsStatus("ready");
-    } catch (err) {
-      setLyricsError(err instanceof Error ? err.message : "Something went wrong.");
-      setLyricsStatus("error");
-    }
-  }, [goTo]);
-
-  const handleApproveStory = useCallback(
-    async (approved: StoryMapV1) => {
-      if (!review) return;
-      setReviewStatus("loading");
-      setReviewError(null);
-      try {
-        const res = await fetch("/api/story-map/approve", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-LinerNotes-Device": deviceToken() },
-          body: JSON.stringify({
-            storyMapId: review.storyMapId,
-            storyMap: approved,
-            resolvedFlagIndexes: review.resolvedIndexes,
-          }),
-        });
-        const data: unknown = await res.json().catch(() => null);
-        if (!res.ok) {
-          throw new Error(errorMessageFrom(data, "Approval didn’t go through. Please try again."));
-        }
-        setGroundedStoryMapId(review.storyMapId);
-        setReviewStatus("idle");
-        const id = review.storyMapId;
-        setReview(null);
-        void generateGroundedLyrics(id);
-      } catch (err) {
-        setReviewError(err instanceof Error ? err.message : "Something went wrong.");
-        setReviewStatus("error");
-      }
-    },
-    [review, generateGroundedLyrics]
-  );
 
   // ── Lyrics generation ─────────────────────────────────────────────────
   const generateLyrics = useCallback(
@@ -603,21 +482,14 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
     const nextInput: SongInput = { ...input, answers: collected };
     setInput(nextInput);
     setMissingAnswers([]);
-    if (groundedFlow) {
-      // The grounded flow reviews the story ("Here's what I heard") before
-      // any lyric is written; the review renders in place of the questions.
-      void startStoryReview(nextInput);
-    } else {
-      void generateLyrics(variation, nextInput);
-    }
+    void generateLyrics(variation, nextInput);
   };
 
   /** Only reachable after the questions failed to generate — not a skip. */
   const handleContinueWithoutQuestions = () => {
     const nextInput: SongInput = { ...input, answers: [] };
     setInput(nextInput);
-    if (groundedFlow) void startStoryReview(nextInput);
-    else void generateLyrics(variation, nextInput);
+    void generateLyrics(variation, nextInput);
   };
 
   const handleAnotherTake = () => {
@@ -965,48 +837,7 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
           />
         )}
 
-        {step === "questions" && groundedFlow && review && reviewStatus === "loading" && (
-          <p role="status" className="start-notice">Approving your story…</p>
-        )}
-        {step === "questions" && groundedFlow && review && reviewStatus === "error" && reviewError && (
-          <p role="alert" className="start-notice">{reviewError}</p>
-        )}
-        {step === "questions" && groundedFlow && review && (
-          <StoryMapReview
-            draft={review.draft}
-            flags={review.flags.map((entry) => entry.flag)}
-            onChange={(draft) => setReview((r) => (r ? { ...r, draft } : r))}
-            onResolveFlag={(index) =>
-              setReview((r) => {
-                if (!r) return r;
-                const resolved = r.flags[index];
-                if (!resolved) return r;
-                return {
-                  ...r,
-                  flags: r.flags.filter((_, i) => i !== index),
-                  resolvedIndexes: [...r.resolvedIndexes, resolved.originalIndex],
-                };
-              })
-            }
-            onApprove={(approved) => void handleApproveStory(approved)}
-            onBack={() => setReview(null)}
-          />
-        )}
-        {step === "questions" && groundedFlow && !review && reviewStatus !== "idle" && (
-          <div className="step-panel" aria-busy={reviewStatus === "loading"}>
-            {reviewStatus === "loading" ? (
-              <p role="status">Putting your story together…</p>
-            ) : (
-              <>
-                <p role="alert">{reviewError}</p>
-                <button type="button" className="btn btn-secondary" onClick={handleSubmitAnswers}>
-                  Try again
-                </button>
-              </>
-            )}
-          </div>
-        )}
-        {step === "questions" && !(groundedFlow && (review || reviewStatus !== "idle")) && (
+        {step === "questions" && (
           <QuestionsStep
             status={questionsStatus}
             error={questionsError}
@@ -1030,16 +861,8 @@ export default function CreateFlow({ musicMode = "demo" }: { musicMode?: "demo" 
             controls={controls}
             onTitleChange={(title) => setSong((s) => (s ? { ...s, title } : s))}
             onLyricsChange={(lyrics) => setSong((s) => (s ? { ...s, lyrics } : s))}
-            onAnotherTake={
-              groundedFlow && groundedStoryMapId
-                ? () => void generateGroundedLyrics(groundedStoryMapId)
-                : handleAnotherTake
-            }
-            onRetry={
-              groundedFlow && groundedStoryMapId
-                ? () => void generateGroundedLyrics(groundedStoryMapId)
-                : () => void generateLyrics(variation)
-            }
+            onAnotherTake={handleAnotherTake}
+            onRetry={() => void generateLyrics(variation)}
             onCopy={() => void handleCopyLyrics()}
             onDownload={handleDownloadLyrics}
             onBack={() => setStep("questions")}

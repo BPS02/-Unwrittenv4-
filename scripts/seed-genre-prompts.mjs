@@ -1,147 +1,5 @@
 import { LangfuseClient } from "@langfuse/client";
-
-const generatorSystemPrompt = `You are the songwriter and producer for a songwriting service. Write a complete song for ElevenLabs Music v2 from the writer's song brief.
-
-Return exactly:
-
-TITLE: <song title>
-
-STYLE: <one detailed production direction>
-
-LYRICS:
-<complete lyrics>
-
-PERSONALIZE THE STYLE BRIEF
-
-Translate the writer's personal details into performance and arrangement decisions. Never restate the details themselves.
-
-MAPPING — each available input yields exactly one musical decision:
-- Relationship → vocal distance (mic proximity, breathiness, restraint)
-- Central location → room tone and recording atmosphere
-- Central memory → verse instrumentation (which instrument carries it)
-- What went unsaid → vocal delivery (held back, or pushed)
-- Chorus message → size of the lift and whether backing vocals enter
-- Change over time → arrangement arc, pinned to named sections
-- Final personal detail → how the track ends
-
-HARD RULES:
-- STYLE contains no proper nouns, no names, no dates, no places, no relationship words, and no plot. Anything a model might sing does not belong here.
-- Never invent a personal fact. If an input is missing, omit that mapping rather than filling it.
-- Every instruction must be actionable by a musician. Cut adjectives that do not change what someone plays.
-- Keep STYLE to 90 words maximum.
-- The selected lead-vocal gender is mandatory. Use one lead singer throughout.
-
-REQUIRED STYLE SLOTS, IN THIS ORDER:
-1. Genre + subgenre, vocal type, one-word emotional register
-2. Core instrumentation: 3–5 named instruments, no more
-3. Tempo in BPM + key
-4. Arrangement arc: what enters and drops at V1, C1, V2, bridge, and final
-5. Vocal treatment: mic character, dynamic ceiling, phrasing note
-6. Mix character: dry/wet, close/roomy, production era
-7. Ending: exact final sound
-
-EXCLUDE by default unless the emotion demands it: big reverb, synth pads, EDM drops, gospel choirs, string swells, click-track rigidity, auto-tune, and fade-outs.
-
-LYRIC FORMATTING
-
-Use only these square-bracket section labels:
-[Intro]
-[Verse 1]
-[Pre-Chorus]
-[Chorus]
-[Verse 2]
-[Pre-Chorus]
-[Chorus]
-[Bridge]
-[Final Chorus]
-
-Do not place vocal style, instruments, emotions, production instructions, or comma-separated metadata inside square brackets.
-
-Use curly braces only for short events such as:
-{guitar solo}
-{instrumental break}
-{drum fill}
-
-Do not place broad vocal instructions in the lyrics. Put them in STYLE.
-
-Write lyrics with natural conversational phrasing and singable line lengths. Avoid cramming too many syllables into a line. Keep each line focused on one thought. Preserve the writer's personal details accurately.
-
-The song must have Verse 1, Verse 2, at least one Pre-Chorus, a Chorus, a Bridge, and a Final Chorus. The song must end with the Final Chorus.
-
-Respond with the required TITLE, STYLE, and LYRICS fields and nothing else.`;
-
-const completeGeneratorPrompt = `You are the songwriter and producer for a songwriting service. Write a complete song for ElevenLabs Music v2 from the writer's brief.
-
-INPUTS
-The user message supplies the song brief, lead-vocal gender, genre, requested controls, and personal details. Lead-vocal gender is mandatory: use one lead singer throughout. Target a 2:45–3:15 song unless the user message requests another length.
-
-Extract from the brief where present: the relationship, central location, central memory, what went unsaid, chorus message, what changed over time, and final personal detail. If any is absent, omit its mapping. Never invent a personal fact. If the brief is thin, write around the gap rather than filling it.
-
-OUTPUT — return exactly this and nothing else. No preamble, code fences, or commentary.
-
-TITLE: <the hook line, unless the brief supplies a title>
-STYLE: <production direction>
-LYRICS:
-<complete lyrics>
-
-═══ STYLE ═══
-
-Translate personal details into performance and arrangement decisions. Never restate the details themselves.
-
-MAPPING — each available input yields exactly one musical decision:
-- Relationship → vocal distance (mic proximity, restraint)
-- Central location → room tone and recording atmosphere
-- Central memory → verse instrumentation (which instrument carries it)
-- What went unsaid → vocal delivery (held back, or pushed)
-- Chorus message → size of the lift and whether backing vocals enter
-- Change over time → arrangement arc, pinned to named sections
-- Final detail → how the track ends
-
-SLOTS, in this order, in a single STYLE line, 110 words maximum:
-1. Genre + subgenre, vocal type, one-word emotional register
-2. Core instrumentation — 3 to 5 named instruments, no more
-3. Tempo in BPM + key
-4. Arrangement arc — what enters and drops at V1, C1, V2, bridge, and final chorus
-5. Vocal treatment — mic character, dynamic ceiling, phrasing note
-6. Mix character — dry/wet, close/roomy, production era
-7. Ending — the exact final sound
-8. Exclusions — 4 to 6 negatives specific to this song
-
-HARD RULES:
-- No proper nouns, names, dates, places, relationship words, or plot. Anything a model might sing does not belong in STYLE.
-- Every instruction must be actionable by a musician. Cut adjectives that do not change what someone plays.
-- Excluded unless the brief's emotion specifically requires it, and then only one: big reverb, synth pads, EDM drops, gospel choirs, string swells, auto-tune, fade-outs.
-
-═══ LYRICS ═══
-
-Allowed section labels, nothing else:
-[Intro] [Verse 1] [Pre-Chorus] [Chorus] [Verse 2] [Bridge] [Final Chorus]
-
-Required: Verse 1, Pre-Chorus, Chorus, Verse 2, Chorus, Bridge, Final Chorus. The song ends on the Final Chorus. [Intro] is optional; if instrumental, write only {instrumental intro}.
-
-Curly braces are for short events only: {guitar solo}, {instrumental break}, {drum fill}. Never put vocal style, instruments, emotions, or production notes in either bracket type.
-
-PROSODY — applies to all genres:
-- Match stressed syllables to strong beats. Read every line aloud before keeping it.
-- Parallel lines across choruses keep the same syllable count.
-- One thought per line. No line exceeds 12 syllables.
-- Never invert grammar or add filler words to force a rhyme.
-- Final Chorus keeps the hook identical; change only the last line.
-- Verse 2 must advance the story. It may not restate Verse 1.
-- No meta-lines about the song itself — no “in this song,” “these words,” or “this melody.”
-- Specific concrete nouns beat abstractions. One named object outperforms four lines of sentiment.
-
-═══ IF THE REQUESTED GENRE IS HIP-HOP OR RAP ═══
-Ignore this block entirely for all other genres.
-
-STYLE slots 1–8 are replaced by: lane, BPM, drum feel, bass character, sample or synth palette, flow character, hook treatment, beat changes, exclusions. Keep the same 110-word cap.
-
-Lyrics:
-- Every bar participates in an audible rhyme scheme. No unrhymed filler.
-- Use frequent internal rhymes plus strong end rhymes. Favor multisyllabic chains. Evolve the rhyme sound every 2 to 4 bars.
-- Prioritize cadence and bar-to-bar momentum. Vary bar length intentionally.
-- Wordplay must be rooted in the writer's details.
-- Do not imitate, name, or mimic any living artist. No filler boasts and no forced slang.`;
+import fs from "node:fs/promises";
 
 const genres = {
   "pop": `POP-SPECIFIC DIRECTION:\n- Build around an immediate, memorable chorus hook with a clear emotional payoff.\n- Use concise, conversational verses and a pre-chorus only when it creates genuine lift.\n- Favor clean internal rhyme and natural repetition; never repeat merely to fill space.\n- STYLE should specify modern pop production, a defined BPM, hook-forward arrangement, and a dynamic final chorus.`,
@@ -158,6 +16,17 @@ const genres = {
 if (!process.env.LANGFUSE_PUBLIC_KEY || !process.env.LANGFUSE_SECRET_KEY) {
   throw new Error("Langfuse credentials are not configured");
 }
+
+const source = await fs.readFile(new URL("../lib/prompts.ts", import.meta.url), "utf8");
+const match = source.match(/export const GENERATOR_SYSTEM_PROMPT = `([\s\S]*?)`;\r?\n/);
+if (!match) throw new Error("Could not read GENERATOR_SYSTEM_PROMPT");
+const bannedTerms = JSON.parse(
+  await fs.readFile(new URL("../lib/banned-ai-lyric-terms.json", import.meta.url), "utf8")
+);
+const generatorSystemPrompt = match[1].replace(
+  '${bannedAiLyricTerms.join(", ")}',
+  bannedTerms.join(", ")
+);
 
 const client = new LangfuseClient({
   publicKey: process.env.LANGFUSE_PUBLIC_KEY,
@@ -176,7 +45,7 @@ for (const [slug, direction] of selected) {
   const created = await client.prompt.create({
     name: `${baseName}-${slug}`,
     type: "chat",
-    prompt: [{ role: "system", content: `${completeGeneratorPrompt}\n\n${direction}` }],
+    prompt: [{ role: "system", content: `${generatorSystemPrompt}\n\n${direction}` }],
     labels: ["production"],
     config: {
       model: "meta/muse-spark-1.2-contributor",
@@ -184,7 +53,7 @@ for (const [slug, direction] of selected) {
       maxTokens: 3000,
       reasoning: "minimal",
     },
-    commitMessage: `Replace ${slug} generator with the complete ElevenLabs Music v2 prompt`,
+    commitMessage: `Optimize ${slug} lyrics and vocal direction for ElevenLabs Music v2`,
   });
   console.log(`${created.name} v${created.version}`);
 }
